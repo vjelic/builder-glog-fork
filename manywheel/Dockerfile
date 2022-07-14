@@ -161,6 +161,10 @@ ADD ./common/install_rocm_drm.sh install_rocm_drm.sh
 RUN bash ./install_rocm_drm.sh && rm install_rocm_drm.sh
 ADD ./common/install_rocm_magma.sh install_rocm_magma.sh
 RUN bash ./install_rocm_magma.sh && rm install_rocm_magma.sh
+
+ADD ./common/install_rccl_2_12.sh install_rccl_2_12.sh
+RUN bash ./install_rccl_2_12.sh && rm install_rccl_2_12.sh
+
 # cmake is already installed inside the rocm base image, but both 2 and 3 exist
 # cmake3 is needed for the later MIOpen custom build, so that step is last.
 RUN yum install -y cmake3 && \
