@@ -4,6 +4,10 @@ GOOD_SSL = "https://google.com"
 BAD_SSL = "https://self-signed.badssl.com"
 
 import sys
+import ssl
+import certifi
+
+#urlopen(request, context=ssl.create_default_context(cafile=certifi.where()))
 
 print("Testing SSL certificate checking for Python:", sys.version)
 
@@ -20,12 +24,12 @@ else:
     EXC = IOError
 
 print("Connecting to %s should work" % (GOOD_SSL,))
-urlopen(GOOD_SSL)
+urlopen(GOOD_SSL, context=ssl.create_default_context(cafile=certifi.where()))
 print("...it did, yay.")
 
 print("Connecting to %s should fail" % (BAD_SSL,))
 try:
-    urlopen(BAD_SSL)
+    urlopen(BAD_SSL, context=ssl.create_default_context(cafile=certifi.where()))
     # If we get here then we failed:
     print("...it DIDN'T!!!!!11!!1one!")
     sys.exit(1)
