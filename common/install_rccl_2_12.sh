@@ -24,11 +24,16 @@ case "$ID" in
     yum autoremove -y cmake
     yum update -y
     rpm -e --nodeps rccl rccl-devel
-    yum -y install gcc gcc-c++ wget make vim
+    yum -y install gcc gcc-c++ wget make vim perl-core pcre-devel zlib-devel
+    wget https://ftp.openssl.org/source/openssl-1.1.1k.tar.gz
+    tar -xzvf openssl-1.1.1k.tar.gz
+    cd openssl-1.1.1k
+    ./config --prefix=/usr --openssldir=/etc/ssl --libdir=lib no-shared zlib-dynamic
+    make && make install
     cd ~
-    wget http://www.cmake.org/files/v3.8/cmake-3.8.2.tar.gz
-    tar -zxvf cmake-3.8.2.tar.gz
-    cd cmake-3.8.2
+    wget https://cmake.org/files/v3.20/cmake-3.20.1.tar.gz
+    tar -zxvf cmake-3.20.1.tar.gz
+    cd cmake-3.20.1
     ./bootstrap
     make install
     cp -f ./bin/cmake ./bin/cpack ./bin/ctest /bin
