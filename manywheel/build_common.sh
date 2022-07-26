@@ -166,6 +166,7 @@ echo "Calling setup.py bdist at $(date)"
 time CMAKE_ARGS=${CMAKE_ARGS[@]} \
      EXTRA_CAFFE2_CMAKE_FLAGS=${EXTRA_CAFFE2_CMAKE_FLAGS[@]} \
      BUILD_LIBTORCH_CPU_WITH_DEBUG=$BUILD_DEBUG_INFO \
+     USE_NCCL=0 USE_RCCL=0 USE_KINETO=0 \
      python setup.py bdist_wheel -d /tmp/$WHEELHOUSE_DIR
 echo "Finished setup.py bdist at $(date)"
 
