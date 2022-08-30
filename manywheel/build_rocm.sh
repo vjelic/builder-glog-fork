@@ -153,58 +153,12 @@ DEPS_SONAME=(
 )
 
 DEPS_AUX_SRCLIST=(
-    "/opt/rocm/lib/rocblas/library/Kernels.so-000-*.hsaco"
-
-    "/opt/rocm/lib/rocblas/library/TensileLibrary_*_gfx803.co"
-    "/opt/rocm/lib/rocblas/library/TensileLibrary_*_gfx900.co"
-    "/opt/rocm/lib/rocblas/library/TensileLibrary_*_gfx906.co"
-    "/opt/rocm/lib/rocblas/library/TensileLibrary_*_gfx908.co"
-    "/opt/rocm/lib/rocblas/library/TensileLibrary_*_gfx90a.co"
-    "/opt/rocm/lib/rocblas/library/TensileLibrary_*_gfx1030.co"
-
-    "/opt/rocm/lib/rocblas/library/TensileLibrary_*_gfx803.dat"
-    "/opt/rocm/lib/rocblas/library/TensileLibrary_*_gfx900.dat"
-    "/opt/rocm/lib/rocblas/library/TensileLibrary_*_gfx906.dat"
-    "/opt/rocm/lib/rocblas/library/TensileLibrary_*_gfx908.dat"
-    "/opt/rocm/lib/rocblas/library/TensileLibrary_*_gfx90a.dat"
-    "/opt/rocm/lib/rocblas/library/TensileLibrary_*_gfx1030.dat"
-    "/opt/rocm/lib/rocblas/library/TensileLibrary_*_fallback.dat"
-
-    "/opt/rocm/lib/rocblas/library/TensileLibrary_*_gfx803.hsaco"
-    "/opt/rocm/lib/rocblas/library/TensileLibrary_*_gfx900.hsaco"
-    "/opt/rocm/lib/rocblas/library/TensileLibrary_*_gfx906-xnack*.hsaco"
-    "/opt/rocm/lib/rocblas/library/TensileLibrary_*_gfx908-xnack*.hsaco"
-    "/opt/rocm/lib/rocblas/library/TensileLibrary_*_gfx90a-xnack*.hsaco"
-    "/opt/rocm/lib/rocblas/library/TensileLibrary_*_gfx1030.hsaco"
-
+    "/opt/rocm/lib/rocblas/library/*"
     "/opt/amdgpu/share/libdrm/amdgpu.ids"
 )
 
 DEPS_AUX_DSTLIST=(
     "lib/rocblas/library/."
-
-    "lib/rocblas/library/."
-    "lib/rocblas/library/."
-    "lib/rocblas/library/."
-    "lib/rocblas/library/."
-    "lib/rocblas/library/."
-    "lib/rocblas/library/."
-
-    "lib/rocblas/library/."
-    "lib/rocblas/library/."
-    "lib/rocblas/library/."
-    "lib/rocblas/library/."
-    "lib/rocblas/library/."
-    "lib/rocblas/library/."
-    "lib/rocblas/library/."
-
-    "lib/rocblas/library/."
-    "lib/rocblas/library/."
-    "lib/rocblas/library/."
-    "lib/rocblas/library/."
-    "lib/rocblas/library/."
-    "lib/rocblas/library/."
-
     "share/libdrm/amdgpu.ids"
 )
 
