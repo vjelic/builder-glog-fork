@@ -292,9 +292,9 @@ for pkg in /$LIBTORCH_HOUSE_DIR/libtorch*.zip; do
             find $PREFIX -name '*.so*' | while read sofile; do
                 origname=${DEPS_SONAME[i]}
                 patchedname=${patched[i]}
-                if [[ "$origname" != "$patchedname" ]]; then
+                if [[ "$origname" != "$patchedname" ]] || [[ "$DESIRED_CUDA" == *"rocm"* ]]; then
                     set +e
-                    $PATCHELF_BIN --print-needed $sofile | grep $origname 2>&1 >/dev/null
+                    origname=$($PATCHELF_BIN --print-needed $sofile | grep "$origname*") 
                     ERRCODE=$?
                     set -e
                     if [ "$ERRCODE" -eq "0" ]; then
