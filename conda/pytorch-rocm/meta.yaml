@@ -1,0 +1,20 @@
+{% set build = 0 %}
+{% set rocm_constraints=">=5.2,<5.3" %}
+
+package:
+  name: pytorch-cuda
+  version: {{ version }}
+build:
+  number: {{ build }}
+  noarch: generic
+requirements:
+  run_constrained:
+    - rocm-hip-runtime {{ rocm_constraints }}
+    - rocm-ml-libraries {{ rocm_constraints }}
+    - rocm-dev {{ rocm_constraints }}
+  # None, pytorch should depend on pytorch-rocm
+test:
+  commands:
+    - echo "pytorch-rocm metapackage is created."
+about:
+  summary: Metapackage to select the PyTorch variant. Use conda's pinning mechanism in your environment to control which variant you want.
