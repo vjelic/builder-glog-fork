@@ -1,6 +1,8 @@
-ARG CUDA_VERSION=10.2
-ARG BASE_TARGET=cuda${CUDA_VERSION}
-FROM nvidia/cuda:9.2-devel-centos7 as base
+ARG ROCM_VERSION=5.2
+ARG BASE_CUDA_VERSION=10.2
+ARG BASE_TARGET=cuda${BASE_CUDA_VERSION}
+ARG GPU_IMAGE=nvidia/cuda:${BASE_CUDA_VERSION}-devel-centos7
+FROM ${GPU_IMAGE} as base
 
 ENV LC_ALL en_US.UTF-8
 ENV LANG en_US.UTF-8
@@ -22,7 +24,6 @@ ENV PATH=/opt/rh/devtoolset-${DEVTOOLSET_VERSION}/root/usr/bin:$PATH
 ENV LD_LIBRARY_PATH=/opt/rh/devtoolset-${DEVTOOLSET_VERSION}/root/usr/lib64:/opt/rh/devtoolset-${DEVTOOLSET_VERSION}/root/usr/lib:$LD_LIBRARY_PATH
 
 RUN yum install -y autoconf aclocal automake make sudo
-RUN rm -rf /usr/local/cuda-*
 
 FROM base as patchelf
 # Install patchelf
@@ -39,28 +40,30 @@ FROM base as conda
 ADD ./common/install_conda.sh install_conda.sh
 RUN bash ./install_conda.sh && rm install_conda.sh
 
-# Install CUDA
-FROM base as cuda
+FROM base as cpu_base
 RUN rm -rf /usr/local/cuda-*
+
+# Install CUDA
+FROM cpu_base as cuda
 ADD ./common/install_cuda.sh install_cuda.sh
 
-FROM cuda as cuda10.2
+FROM cuda as cuda10.2_base
 RUN bash ./install_cuda.sh 10.2
 ENV DESIRED_CUDA=10.2
 
-FROM cuda as cuda11.3
+FROM cuda as cuda11.3_base
 RUN bash ./install_cuda.sh 11.3
 ENV DESIRED_CUDA=11.3
 
-FROM cuda as cuda11.5
+FROM cuda as cuda11.5_base
 RUN bash ./install_cuda.sh 11.5
 ENV DESIRED_CUDA=11.5
 
-FROM cuda as cuda11.6
+FROM cuda as cuda11.6_base
 RUN bash ./install_cuda.sh 11.6
 ENV DESIRED_CUDA=11.6
 
-FROM cuda as cuda11.7
+FROM cuda as cuda11.7_base
 RUN bash ./install_cuda.sh 11.7
 ENV DESIRED_CUDA=11.7
 
@@ -69,12 +72,32 @@ FROM base as mnist
 ADD ./common/install_mnist.sh install_mnist.sh
 RUN bash ./install_mnist.sh
 
-FROM base as all_cuda
+FROM cpu_base as all_cuda_base
 COPY --from=cuda10.2  /usr/local/cuda-10.2 /usr/local/cuda-10.2
 COPY --from=cuda11.3  /usr/local/cuda-11.3 /usr/local/cuda-11.3
 COPY --from=cuda11.5  /usr/local/cuda-11.5 /usr/local/cuda-11.5
 COPY --from=cuda11.6  /usr/local/cuda-11.6 /usr/local/cuda-11.6
 COPY --from=cuda11.7  /usr/local/cuda-11.7 /usr/local/cuda-11.7
+
+FROM base as rocm_base
+ARG ROCM_VERSION=5.2
+ARG PYTORCH_ROCM_ARCH
+ENV PYTORCH_ROCM_ARCH ${PYTORCH_ROCM_ARCH}
+# Install ROCm
+ADD ./common/install_rocm.sh install_rocm.sh
+RUN ROCM_VERSION=${ROCM_VERSION} bash ./install_rocm.sh && rm install_rocm.sh
+ADD ./common/install_rocm_drm.sh install_rocm_drm.sh
+RUN bash ./install_rocm_drm.sh && rm install_rocm_drm.sh
+ADD ./common/install_rocm_magma.sh install_rocm_magma.sh
+RUN bash ./install_rocm_magma.sh && rm install_rocm_magma.sh
+# cmake is already installed inside the rocm base image, but both 2 and 3 exist
+# cmake3 is needed for the later MIOpen custom build, so that step is last.
+RUN yum install -y cmake3 && \
+    rm -f /usr/bin/cmake && \
+    ln -s /usr/bin/cmake3 /usr/bin/cmake
+ADD ./common/install_miopen.sh install_miopen.sh
+RUN bash ./install_miopen.sh ${ROCM_VERSION} && rm install_miopen.sh
+
 
 FROM ${BASE_TARGET} as final
 # Install LLVM

@@ -5,24 +5,38 @@ set -eou pipefail
 export DOCKER_BUILDKIT=1
 TOPDIR=$(git rev-parse --show-toplevel)
 
-CUDA_VERSION=${CUDA_VERSION:-10.2}
-DEVTOOLSET_VERSION="9"
-if [[ ${CUDA_VERSION:0:2} == "10" ]]; then
-  DEVTOOLSET_VERSION="7"
-fi
+GPU_ARCH_TYPE=${GPU_ARCH_TYPE:-cpu}
+GPU_ARCH_VERSION=${GPU_ARCH_VERSION:-}
 
-case ${CUDA_VERSION} in
+case ${GPU_ARCH_TYPE} in
   cpu)
-    BASE_TARGET=base
+    BASE_TARGET=cpu_base
     DOCKER_TAG=cpu
     ;;
-  all)
-    BASE_TARGET=all_cuda
-    DOCKER_TAG=latest
+  cuda)
+    if [[ "$GPU_ARCH_VERSION" == all ]]; then
+      BASE_TARGET=all_cuda_base
+      DOCKER_TAG=all_cuda
+    else
+      BASE_TARGET=cuda${GPU_ARCH_VERSION}_base
+      DOCKER_TAG=cuda${GPU_ARCH_VERSION}
+    fi
+    DEVTOOLSET_VERSION="9"
+    if [[ ${GPU_ARCH_VERSION:0:2} == "10" ]]; then
+      DEVTOOLSET_VERSION="7"
+    fi
+    GPU_IMAGE=nvidia/cuda:${GPU_ARCH_VERSION}-devel-centos7
+    DOCKER_GPU_BUILD_ARG="--build-arg BASE_CUDA_VERSION=${GPU_ARCH_VERSION} --build-arg DEVTOOLSET_VERSION=${DEVTOOLSET_VERSION}"
+    ;;
+  rocm)
+    BASE_TARGET=rocm_final
+    DOCKER_TAG=rocm${GPU_ARCH_VERSION}
+    GPU_IMAGE=rocm/dev-centos-7:${GPU_ARCH_VERSION}
+    DOCKER_GPU_BUILD_ARG="--build-arg ROCM_VERSION=${GPU_ARCH_VERSION}"
     ;;
   *)
-    BASE_TARGET=cuda${CUDA_VERSION}
-    DOCKER_TAG=cuda${CUDA_VERSION}
+    echo "ERROR: Unrecognized GPU_ARCH_TYPE: ${GPU_ARCH_TYPE}"
+    exit 1
     ;;
 esac
 
@@ -30,9 +44,9 @@ esac
   set -x
   docker build \
     --target final \
+    ${DOCKER_GPU_BUILD_ARG} \
     --build-arg "BASE_TARGET=${BASE_TARGET}" \
-    --build-arg "CUDA_VERSION=${CUDA_VERSION}" \
-    --build-arg "DEVTOOLSET_VERSION=${DEVTOOLSET_VERSION}" \
+    --build-arg "GPU_IMAGE=${GPU_IMAGE}" \
     -t "pytorch/conda-builder:${DOCKER_TAG}" \
     -f "${TOPDIR}/conda/Dockerfile" \
     ${TOPDIR}
