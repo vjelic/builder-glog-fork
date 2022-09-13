@@ -5,6 +5,9 @@ fi
 
 set -ex
 
+GPU_ARCH_TYPE=${GPU_ARCH_TYPE:-cpu}
+GPU_ARCH_VERSION=${GPU_ARCH_VERSION:-}
+
 # TODO there is a LOT of duplicate code everywhere. There's duplicate code for
 # mac siloing of pytorch and conda installations with wheel/build_wheel.sh.
 # There's also duplicate versioning logic amongst *all* the building scripts
@@ -33,26 +36,28 @@ retry () {
 
 # Parse arguments and determmine version
 ###########################################################
-if [[ -n "$DESIRED_CUDA" && -n "$PYTORCH_BUILD_VERSION" && -n "$PYTORCH_BUILD_NUMBER" ]]; then
-    desired_cuda="$DESIRED_CUDA"
+if [[ -n "$GPU_ARCH_TYPE" && -n "$GPU_ARCH_VERSION" && -n "$PYTORCH_BUILD_VERSION" && -n "$PYTORCH_BUILD_NUMBER"]]; then
+    gpu_arch_type="$GPU_ARCH_TYPE"
+    gpu_arch_version="$GPU_ARCH_VERSION"
     build_version="$PYTORCH_BUILD_VERSION"
     build_number="$PYTORCH_BUILD_NUMBER"
 else
-    if [ "$#" -ne 3 ]; then
-        echo "Illegal number of parameters. Pass cuda version, pytorch version, build number"
+    if [ "$#" -ne 4 ]; then
+        echo "Illegal number of parameters. Pass gpu arch type, gpu arch version, pytorch version, build number"
         echo "CUDA version should be Mm with no dot, e.g. '80'"
         echo "DESIRED_PYTHON should be M.m, e.g. '2.7'"
         exit 1
     fi
 
-    desired_cuda="$1"
-    build_version="$2"
-    build_number="$3"
+    gpu_arch_type="$1"
+    gpu_arch_version="$2"
+    build_version="$3"
+    build_number="$4"
 fi
-if [[ "$desired_cuda" != cpu ]]; then
-  desired_cuda="$(echo $desired_cuda | tr -d cuda. )"
+if [[ "$gpu_arch_type" == 'cuda' ]]; then
+  gpu_arch_version="$(echo $gpu_arch_version | tr -d cuda. )"
 fi
-echo "Building cuda version $desired_cuda and pytorch version: $build_version build_number: $build_number"
+echo "Building $gpu_arch_type version $gpu_arch_version and pytorch version: $build_version build_number: $build_number"
 
 if [[ "$OSTYPE" == "msys" ]]; then
     export PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin:.:$PATH"
@@ -108,17 +113,17 @@ fi
 if [[ "$OSTYPE" == "darwin"* ]]; then
     DEVELOPER_DIR=/Applications/Xcode9.app/Contents/Developer
 fi
-if [[ "$desired_cuda" == 'cpu' ]]; then
+if [[ "$gpu_arch_type" == 'cpu' ]]; then
     cpu_only=1
-else
+elif [[ "$gpu_arch_type" == 'cuda' ]]; then
     # Switch desired_cuda to be M.m to be consistent with other scripts in
     # pytorch/builder
-    cuda_nodot="$desired_cuda"
+    cuda_nodot="$gpu_arch_version"
 
     if [[ ${#cuda_nodot} -eq 2 ]]; then
-        desired_cuda="${desired_cuda:0:1}.${desired_cuda:1:1}"
+        gpu_arch_version="${gpu_arch_version:0:1}.${gpu_arch_version:1:1}"
     elif [[ ${#cuda_nodot} -eq 3 ]]; then
-        desired_cuda="${desired_cuda:0:2}.${desired_cuda:2:1}"
+        gpu_arch_version="${gpu_arch_version:0:2}.${gpu_arch_version:2:1}"
     else
         echo "unknown cuda version $cuda_nodot"
         exit 1
@@ -142,7 +147,11 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 fi
 
 echo "Will build for all Pythons: ${DESIRED_PYTHON[@]}"
-echo "Will build for CUDA version: ${desired_cuda}"
+if [[ "$gpu_arch_type" == cpu ]]; then
+    echo "Will build for CPU"
+else
+    echo "Will build for ${gpu_arch_type} version: ${gpu_arch_version}"
+fi
 
 SOURCE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
@@ -233,8 +242,10 @@ else
         build_folder='pytorch'
     elif [[ -n "$cpu_only" ]]; then
         build_folder='pytorch-cpu'
-    else
-        build_folder="pytorch-$cuda_nodot"
+    elif [[ "$gpu_arch_type" == 'cuda' ]]; then
+        build_folder="pytorch-cuda$cuda_nodot"
+    elif [[ "$gpu_arch_type" == 'rocm' ]]; then
+        build_folder="pytorch-rocm$gpu_arch_version"
     fi
     build_folder="$build_folder-$build_version"
 fi
@@ -250,7 +261,9 @@ echo "Using conda-build folder $build_folder"
 build_string_suffix="$PYTORCH_BUILD_NUMBER"
 if [[ -n "$cpu_only" ]]; then
     export USE_CUDA=0
+    export USE_ROCM=0
     export CONDA_CUDATOOLKIT_CONSTRAINT=""
+    export CONDA_ROCM_CONSTRAINT=""
     export MAGMA_PACKAGE=""
     export CUDA_VERSION="0.0"
     export CUDNN_VERSION="0.0"
@@ -258,32 +271,41 @@ if [[ -n "$cpu_only" ]]; then
         build_string_suffix="cpu_${build_string_suffix}"
     fi
     export PYTORCH_BUILD_VARIANT="cpu"
-else
+elif [[ "$gpu_arch_type" == 'cuda' ]]; then
     # Switch the CUDA version that /usr/local/cuda points to. This script also
     # sets CUDA_VERSION and CUDNN_VERSION
-    echo "Switching to CUDA version $desired_cuda"
+    echo "Switching to CUDA version $gpu_arch_version"
     export PYTORCH_BUILD_VARIANT="cuda"
-    . ./switch_cuda_version.sh "$desired_cuda"
+    . ./switch_cuda_version.sh "$gpu_arch_version"
     # TODO, simplify after anaconda fixes their cudatoolkit versioning inconsistency.
     # see: https://github.com/conda-forge/conda-forge.github.io/issues/687#issuecomment-460086164
-    if [[ "$desired_cuda" == "11.7" ]]; then
+    if [[ "$gpu_arch_version" == "11.7" ]]; then
 	    export CONDA_CUDATOOLKIT_CONSTRAINT="    - cudatoolkit >=11.7,<11.8 # [not osx]"
 	    export MAGMA_PACKAGE="    - magma-cuda117 # [not osx and not win]"
-    elif [[ "$desired_cuda" == "11.6" ]]; then
+    elif [[ "$gpu_arch_version" == "11.6" ]]; then
         export CONDA_CUDATOOLKIT_CONSTRAINT="    - cuda >=11.6,<11.7 # [not osx]"
         export MAGMA_PACKAGE="    - magma-cuda116 # [not osx and not win]"
-    elif [[ "$desired_cuda" == "11.3" ]]; then
+    elif [[ "$gpu_arch_version" == "11.3" ]]; then
         export CONDA_CUDATOOLKIT_CONSTRAINT="    - cudatoolkit >=11.3,<11.4 # [not osx]"
         export MAGMA_PACKAGE="    - magma-cuda113 # [not osx and not win]"
-    elif [[ "$desired_cuda" == "10.2" ]]; then
+    elif [[ "$gpu_arch_version" == "10.2" ]]; then
         export CONDA_CUDATOOLKIT_CONSTRAINT="    - cudatoolkit >=10.2,<10.3 # [not osx]"
         export MAGMA_PACKAGE="    - magma-cuda102 # [not osx and not win]"
     else
-        echo "unhandled desired_cuda: $desired_cuda"
+        echo "unhandled gpu_arch_version: $gpu_arch_version"
         exit 1
     fi
 
     build_string_suffix="cuda${CUDA_VERSION}_cudnn${CUDNN_VERSION}_${build_string_suffix}"
+elif [[ "$gpu_arch_type" == 'rocm' ]]; then
+    export PYTORCH_BUILD_VARIANT="rocm"
+    if [[ "$gpu_arch_version" == "5.2" ]]; then
+        export CONDA_ROCM_CONSTRAINT="    - pytorch-rocm >=5.2,<5.3 # [not osx and not win]"
+        export MAGMA_PACKAGE="    - magma-rocm # [not osx and not win]"
+    else
+        echo "unhandled gpu_arch_version: $gpu_arch_version"
+        exit 1
+    fi
 fi
 
 # Some tricks for sccache with conda builds on Windows
