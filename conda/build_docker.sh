@@ -12,6 +12,7 @@ case ${GPU_ARCH_TYPE} in
   cpu)
     BASE_TARGET=cpu_base
     DOCKER_TAG=cpu
+    DOCKER_GPU_BUILD_ARG=''
     ;;
   cuda)
     if [[ "$GPU_ARCH_VERSION" == all ]]; then
@@ -29,7 +30,7 @@ case ${GPU_ARCH_TYPE} in
     DOCKER_GPU_BUILD_ARG="--build-arg BASE_CUDA_VERSION=${GPU_ARCH_VERSION} --build-arg DEVTOOLSET_VERSION=${DEVTOOLSET_VERSION}"
     ;;
   rocm)
-    BASE_TARGET=rocm_final
+    BASE_TARGET=rocm_base
     DOCKER_TAG=rocm${GPU_ARCH_VERSION}
     GPU_IMAGE=rocm/dev-centos-7:${GPU_ARCH_VERSION}
     DOCKER_GPU_BUILD_ARG="--build-arg ROCM_VERSION=${GPU_ARCH_VERSION}"
