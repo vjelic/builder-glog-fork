@@ -36,7 +36,7 @@ retry () {
 
 # Parse arguments and determmine version
 ###########################################################
-if [[ -n "$GPU_ARCH_TYPE" && -n "$GPU_ARCH_VERSION" && -n "$PYTORCH_BUILD_VERSION" && -n "$PYTORCH_BUILD_NUMBER"]]; then
+if [[ -n "$GPU_ARCH_TYPE" && -n "$GPU_ARCH_VERSION" && -n "$PYTORCH_BUILD_VERSION" && -n "$PYTORCH_BUILD_NUMBER" ]]; then
     gpu_arch_type="$GPU_ARCH_TYPE"
     gpu_arch_version="$GPU_ARCH_VERSION"
     build_version="$PYTORCH_BUILD_VERSION"
