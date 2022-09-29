@@ -89,8 +89,6 @@ ADD ./common/install_rocm.sh install_rocm.sh
 RUN ROCM_VERSION=${ROCM_VERSION} bash ./install_rocm.sh && rm install_rocm.sh
 ADD ./common/install_rocm_drm.sh install_rocm_drm.sh
 RUN bash ./install_rocm_drm.sh && rm install_rocm_drm.sh
-ADD ./common/install_rocm_magma.sh install_rocm_magma.sh
-RUN bash ./install_rocm_magma.sh && rm install_rocm_magma.sh
 # cmake is already installed inside the rocm base image, but both 2 and 3 exist
 # cmake3 is needed for the later MIOpen custom build, so that step is last.
 RUN yum install -y cmake3 && \
