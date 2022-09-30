@@ -2,7 +2,7 @@
 {% set rocm_constraints=">=5.2,<5.3" %}
 
 package:
-  name: pytorch-cuda
+  name: pytorch-rocm
   version: {{ version }}
 build:
   number: {{ build }}
