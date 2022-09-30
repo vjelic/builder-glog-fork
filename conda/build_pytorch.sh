@@ -307,6 +307,8 @@ elif [[ "$gpu_arch_type" == 'rocm' ]]; then
         echo "unhandled gpu_arch_version: $gpu_arch_version"
         exit 1
     fi
+
+    build_string_suffix="rocm${gpu_arch_version}_${build_string_suffix}"
 fi
 
 # Some tricks for sccache with conda builds on Windows
