@@ -299,6 +299,7 @@ elif [[ "$gpu_arch_type" == 'cuda' ]]; then
     build_string_suffix="cuda${CUDA_VERSION}_cudnn${CUDNN_VERSION}_${build_string_suffix}"
 elif [[ "$gpu_arch_type" == 'rocm' ]]; then
     export PYTORCH_BUILD_VARIANT="rocm"
+    export USE_ROCM=1
     if [[ "$gpu_arch_version" == "5.2" ]]; then
         export CONDA_ROCM_CONSTRAINT="    - pytorch-rocm >=5.2,<5.3 # [not osx and not win]"
         export MAGMA_PACKAGE="    - magma-rocm # [not osx and not win]"

@@ -8,6 +8,7 @@ export PYTORCH_BUILD_VERSION=$PKG_VERSION
 export PYTORCH_BUILD_NUMBER=$PKG_BUILDNUM
 export USE_LLVM="/opt/llvm_no_cxx11_abi"
 export LLVM_DIR="$USE_LLVM/lib/cmake/llvm"
+export PACKAGE_TYPE="conda"
 
 # set OPENSSL_ROOT_DIR=/opt/openssl if it exists
 if [[ -e /opt/openssl ]]; then
@@ -46,8 +47,10 @@ DEPS_LIST=()
 # fi
 
 
-if [[ -z "$USE_CUDA" || "$USE_CUDA" == 1 ]]; then
+if [[ -z "$USE_ROCM" && (-z "$USE_CUDA" || "$USE_CUDA" == 1) ]]; then
     build_with_cuda=1
+else
+    build_with_rocm=1
 fi
 if [[ -n "$build_with_cuda" ]]; then
     export TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
@@ -92,6 +95,14 @@ if [[ -n "$build_with_cuda" ]]; then
     # not needed if using conda's cudatoolkit package. Uncomment to statically link a new CUDA version that's not available in conda yet
     # export ATEN_STATIC_CUDA=1 # links ATen / libcaffe2_gpu.so with static CUDA libs, also sets up special cufft linkage
     # export USE_CUDA_STATIC_LINK=1 # links libcaffe2_gpu.so with static CUDA libs. Likely both these flags can be de-duplicated
+fi
+if [[ -n "$build_with_rocm" ]]; then
+    export HIP_PATH=$PREFIX/hip
+    export ROCM_PATH=$PREFIX
+    export ROCM_SOURCE_DIR=$PREFIX
+    export USE_ROCM=1
+    export USE_MAGMA=1
+    python tools/amd_build/build_amd.py
 fi
 
 fname_with_sha256() {
