@@ -7,6 +7,10 @@ package:
 
 source:
   path: "{{ environ.get('PYTORCH_GITHUB_ROOT_DIR') }}"
+  {% if build_variant == 'rocm' %}
+  patches:
+    - set-rocm_source_dir.patch
+  {% endif %}
 
 requirements:
   build:
