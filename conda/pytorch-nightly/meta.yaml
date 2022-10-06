@@ -23,10 +23,13 @@ requirements:
     - python
     - setuptools
     - pyyaml
-    {% if cross_compile_arm64 == 0 %}
+    {% if cross_compile_arm64 == 0 and build_variant != 'rocm' %}
     - mkl-include # [x86_64]
     - mkl=2020.2 # [x86_64 and (not win or py <= 39)]
     - mkl=2021.4 # [x86_64 and win and py >= 310]
+    {% elif build_variant == 'rocm' %}
+    - mkl-include # [x86_64]
+    - mkl<2022 # [x86_64]
     {% endif %}
     - typing_extensions
     - ninja
