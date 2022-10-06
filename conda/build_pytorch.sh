@@ -320,9 +320,7 @@ if [[ "$OSTYPE" == "msys" && "$USE_SCCACHE" == "1" ]]; then
     export CONDA_BLD_PATH="C:\\cb"
     export CONDA_BUILD_EXTRA_ARGS="--dirty"
 else
-    # FIXME: commented to set extra args in test ci
-    # export CONDA_BUILD_EXTRA_ARGS=""
-    echo "Skipping unsetting CONDA_BUILD_EXTRA_ARGS"
+    export CONDA_BUILD_EXTRA_ARGS=""
 fi
 
 # Build PyTorch with Gloo's TCP_TLS transport
