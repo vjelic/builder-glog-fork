@@ -11,10 +11,8 @@ build:
   number: {{ build }}
   noarch: generic
 requirements:
-  run_constrained:
-    - rocm-hip-runtime {{ rocm_constraints }}
-    - rocm-ml-libraries {{ rocm_constraints }}
-    - rocm-dev {{ rocm_constraints }}
+  run:
+    - rocm {{ rocm_constraints }}
   # None, pytorch should depend on pytorch-rocm
 test:
   commands:

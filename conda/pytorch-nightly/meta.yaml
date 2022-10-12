@@ -29,7 +29,8 @@ requirements:
     - mkl=2021.4 # [x86_64 and win and py >= 310]
     {% elif build_variant == 'rocm' %}
     - mkl-include # [x86_64]
-    - mkl<2022 # [x86_64]
+    - mkl >=2021,<2022 # [x86_64]
+{{ environ.get('CONDA_ROCM_CONSTRAINT', '') }}
     {% endif %}
     - typing_extensions
     - ninja
