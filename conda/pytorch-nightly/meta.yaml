@@ -49,7 +49,7 @@ requirements:
     - libuv # [win]
     - intel-openmp # [win]
     - typing_extensions
-    {% if cross_compile_arm64 == 0 %}
+    {% if cross_compile_arm64 == 0 and build_variant != 'rocm' %}
     - blas * mkl
     {% endif %}
     - pytorch-mutex 1.0 {{ build_variant }}  # [not osx ]
