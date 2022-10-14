@@ -44,7 +44,11 @@ requirements:
   run:
     - python
     {% if cross_compile_arm64 == 0 %}
+      {% if build_variant == 'rocm' %}
+    - mkl >=2021,<2022 # [x86_64]
+      {% else %}
     - mkl >=2018 # [x86_64]
+      {% endif %}
     {% endif %}
     - libuv # [win]
     - intel-openmp # [win]
