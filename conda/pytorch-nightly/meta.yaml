@@ -107,6 +107,13 @@ build:
     - _GLIBCXX_USE_CXX11_ABI # [unix]
 
 test:
+  {% if build_variant == 'rocm' %}
+  files:
+    - test
+    - run-torch.sh
+  commands:
+    - bash run-torch.sh
+  {% endif %}
  imports:
     - torch
 

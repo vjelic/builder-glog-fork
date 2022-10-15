@@ -387,7 +387,7 @@ for py_ver in "${DESIRED_PYTHON[@]}"; do
                      --no-anaconda-upload \
                      --python "$py_ver" \
                      --output-folder "$output_folder" \
-                     --no-test $CONDA_BUILD_EXTRA_ARGS \
+                     $CONDA_BUILD_EXTRA_ARGS \
                      "$build_folder"
     echo "Finished conda-build at $(date)"
 
