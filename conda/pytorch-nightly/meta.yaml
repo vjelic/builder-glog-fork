@@ -114,7 +114,7 @@ test:
   commands:
     - bash run-torch.sh
   {% endif %}
- imports:
+  imports:
     - torch
 
 about:
