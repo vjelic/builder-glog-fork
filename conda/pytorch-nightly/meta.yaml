@@ -56,6 +56,9 @@ requirements:
     {% if cross_compile_arm64 == 0 and build_variant != 'rocm' %}
     - blas * mkl
     {% endif %}
+    {% if build_variant == 'rocm' %}
+{{ environ.get('MAGMA_PACKAGE', '') }}
+    {% endif %}
     - pytorch-mutex 1.0 {{ build_variant }}  # [not osx ]
 {{ environ.get('CONDA_CUDATOOLKIT_CONSTRAINT', '') }}
 {{ environ.get('CONDA_ROCM_CONSTRAINT', '') }}
