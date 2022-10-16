@@ -111,6 +111,15 @@ build:
 
 test:
   {% if build_variant == 'rocm' %}
+  requires:
+    - future
+    - hypothesis
+    - numpy
+    - protobuf
+    - setuptools
+    - six
+    - typing_extensions
+    - pyyaml
   files:
     - test
     - run-torch.sh
