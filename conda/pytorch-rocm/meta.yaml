@@ -1,7 +1,7 @@
 {% set build = 0 %}
-{% set rocm_constraints=">=5.2,<5.3" %}
-{% if version == '5.3' %}
 {% set rocm_constraints=">=5.3,<5.4" %}
+{% if version == '5.4' %}
+{% set rocm_constraints=">=5.4,<5.5" %}
 {% endif %}
 
 package:
