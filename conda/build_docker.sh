@@ -32,7 +32,7 @@ case ${GPU_ARCH_TYPE} in
   rocm)
     BASE_TARGET=rocm_base
     DOCKER_TAG=rocm${GPU_ARCH_VERSION}
-    GPU_IMAGE=rocm/dev-centos-7:${GPU_ARCH_VERSION}
+    GPU_IMAGE=rocm/dev-centos-7:latest
     PYTORCH_ROCM_ARCH="gfx900;gfx906;gfx908"
     DOCKER_GPU_BUILD_ARG="--build-arg ROCM_VERSION=${GPU_ARCH_VERSION} --build-arg PYTORCH_ROCM_ARCH=${PYTORCH_ROCM_ARCH}"
     ;;
