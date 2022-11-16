@@ -12,9 +12,7 @@ build:
   noarch: generic
 requirements:
   run:
-    - rocm-dev {{ rocm_constraints }}
-    - rocm-hip-sdk {{ rocm_constraints }}
-    - rocm-ml-libraries {{ rocm_constraints }}
+    - rocm {{ rocm_constraints }}
     - miopen-hip-dev {{ rocm_constraints }}
     - libtinfo5
   # None, pytorch should depend on pytorch-rocm
