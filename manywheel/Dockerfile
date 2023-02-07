@@ -177,3 +177,10 @@ RUN rpm -e cmake && \
 
 ADD ./common/install_miopen.sh install_miopen.sh
 RUN bash ./install_miopen.sh ${ROCM_VERSION} && rm install_miopen.sh
+
+FROM ${GPU_IMAGE} as rocm_extras
+COPY --from=rocm_final /opt/rocm/magma /opt/rocm/magma
+RUN rm -f /opt/rocm/lib/libMIOpen*
+COPY --from=rocm_final /opt/rocm/lib/libMIOpen.so.1.0 /opt/rocm/lib/libMIOpen.so.1.0
+RUN cd /opt/rocm/lib && ln -s libMIOpen.so.1.0 libMIOpen.so.1
+RUN cd /opt/rocm/lib && ln -s libMIOpen.so.1 libMIOpen.so

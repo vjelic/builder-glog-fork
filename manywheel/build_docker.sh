@@ -41,8 +41,10 @@ case ${GPU_ARCH_TYPE} in
         DOCKER_GPU_BUILD_ARG="--build-arg BASE_CUDA_VERSION=${GPU_ARCH_VERSION} --build-arg DEVTOOLSET_VERSION=${DEVTOOLSET_VERSION}"
         ;;
     rocm)
-        TARGET=rocm_final
-        DOCKER_TAG=rocm${GPU_ARCH_VERSION}
+        #TARGET=rocm_final
+        TARGET=rocm_extras
+        #DOCKER_TAG=rocm${GPU_ARCH_VERSION}
+        DOCKER_TAG=rocm${GPU_ARCH_VERSION}-magma-miopen-staging
         LEGACY_DOCKER_IMAGE=${DOCKER_REGISTRY}/pytorch/manylinux-rocm:${GPU_ARCH_VERSION}
         GPU_IMAGE=rocm/dev-centos-7:${GPU_ARCH_VERSION}
         PYTORCH_ROCM_ARCH="gfx900;gfx906;gfx908"
@@ -83,6 +85,7 @@ fi
         -f "${TOPDIR}/manywheel/Dockerfile${DOCKERFILE_SUFFIX}" \
         "${TOPDIR}"
 )
+exit 0
 
 GITHUB_REF=${GITHUB_REF:-$(git symbolic-ref -q HEAD || git describe --tags --exact-match)}
 GIT_BRANCH_NAME=${GITHUB_REF##*/}
