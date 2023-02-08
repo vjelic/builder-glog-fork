@@ -166,8 +166,7 @@ RUN rpm -e cmake && \
     pip3 install cmake==3.18.4 && \
     ln -sf /usr/local/bin/cmake /usr/bin/cmake && \
     ln -sf /usr/local/bin/cmake /usr/bin/cmake3
-### The following is now performed beforehand in a new GPU_IMAGE with magma and miopen preinstalled
-#ADD ./common/install_rocm_magma.sh install_rocm_magma.sh
-#RUN bash ./install_rocm_magma.sh && rm install_rocm_magma.sh
-#ADD ./common/install_miopen.sh install_miopen.sh
-#RUN bash ./install_miopen.sh ${ROCM_VERSION} && rm install_miopen.sh
+ADD ./common/install_rocm_magma.sh install_rocm_magma.sh
+RUN bash ./install_rocm_magma.sh && rm install_rocm_magma.sh
+ADD ./common/install_miopen.sh install_miopen.sh
+RUN bash ./install_miopen.sh ${ROCM_VERSION} && rm install_miopen.sh
