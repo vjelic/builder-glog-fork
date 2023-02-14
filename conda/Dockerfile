@@ -46,6 +46,9 @@ RUN rm -rf /usr/local/cuda-*
 
 # Install CUDA
 FROM cpu_base as cuda
+ENV CUDA_HOME=/usr/local/cuda-${CUDA_VERSION}
+# Make things in our path by default
+ENV PATH=/usr/local/cuda-${CUDA_VERSION}/bin:$PATH
 ADD ./common/install_cuda.sh install_cuda.sh
 
 FROM cuda as cuda10.2_base
@@ -68,17 +71,19 @@ FROM cuda as cuda11.7_base
 RUN bash ./install_cuda.sh 11.7
 ENV DESIRED_CUDA=11.7
 
+FROM cuda as cuda11.8
+RUN bash ./install_cuda.sh 11.8
+ENV DESIRED_CUDA=11.8
+
 # Install MNIST test data
 FROM base as mnist
 ADD ./common/install_mnist.sh install_mnist.sh
 RUN bash ./install_mnist.sh
 
 FROM cpu_base as all_cuda_base
-COPY --from=cuda10.2  /usr/local/cuda-10.2 /usr/local/cuda-10.2
-COPY --from=cuda11.3  /usr/local/cuda-11.3 /usr/local/cuda-11.3
-COPY --from=cuda11.5  /usr/local/cuda-11.5 /usr/local/cuda-11.5
 COPY --from=cuda11.6  /usr/local/cuda-11.6 /usr/local/cuda-11.6
 COPY --from=cuda11.7  /usr/local/cuda-11.7 /usr/local/cuda-11.7
+COPY --from=cuda11.8  /usr/local/cuda-11.8 /usr/local/cuda-11.8
 
 FROM base as rocm_base
 ARG ROCM_VERSION=5.2

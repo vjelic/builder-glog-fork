@@ -25,8 +25,8 @@ requirements:
     - pyyaml
     {% if cross_compile_arm64 == 0 and build_variant != 'rocm' %}
     - mkl-include # [x86_64]
-    - mkl=2020.2 # [x86_64 and (not win or py <= 39)]
-    - mkl=2021.4 # [x86_64 and win and py >= 310]
+    - mkl=2020.2 # [x86_64 and not win]
+    - mkl=2021.4 # [x86_64 and win]
     {% elif build_variant == 'rocm' %}
     - mkl-include # [x86_64]
     - mkl >=2021,<2022 # [x86_64]
@@ -36,8 +36,10 @@ requirements:
     - ninja
     - libuv # [win]
     - numpy=1.19 # [py <= 39]
-    - numpy=1.21.5 # [py >= 310]
-    - openssl=1.1.1l # [py >= 310 and linux]
+    - numpy=1.21.5 # [py == 310]
+    - numpy=1.23.5 # [py >= 311]
+    - openssl=1.1.1l # [py == 310 and linux]
+    - openssl=1.1.1s # [py >= 311 and linux]
 {{ environ.get('PYTORCH_LLVM_PACKAGE', '    - llvmdev=9') }}
 {{ environ.get('MAGMA_PACKAGE', '') }}
 
@@ -53,12 +55,14 @@ requirements:
     - libuv # [win]
     - intel-openmp # [win]
     - typing_extensions
+    - sympy
     {% if cross_compile_arm64 == 0 and build_variant != 'rocm' %}
     - blas * mkl
     {% endif %}
     - pytorch-mutex 1.0 {{ build_variant }}  # [not osx ]
 {{ environ.get('CONDA_CUDATOOLKIT_CONSTRAINT', '') }}
 {{ environ.get('CONDA_ROCM_CONSTRAINT', '') }}
+{{ environ.get('CONDA_TRITON_CONSTRAINT', '') }}
     {% if build_variant == 'rocm' %}
 {{ environ.get('MAGMA_PACKAGE', '') }}
     {% endif %}
@@ -81,6 +85,7 @@ build:
     - CUDA_VERSION
     - CUDNN_VERSION
     - CONDA_CUDATOOLKIT_CONSTRAINT
+    - CONDA_TRITON_CONSTRAINT
     - USE_CUDA
     # ROCm
     - USE_ROCM
@@ -108,6 +113,7 @@ build:
     - USE_PYTORCH_METAL_EXPORT # [osx]
     - USE_COREML_DELEGATE # [osx]
     - _GLIBCXX_USE_CXX11_ABI # [unix]
+    - OVERRIDE_TORCH_CUDA_ARCH_LIST
 
 test:
  imports:
