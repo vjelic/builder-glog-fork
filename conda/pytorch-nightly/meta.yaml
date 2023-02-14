@@ -30,6 +30,7 @@ requirements:
     {% elif build_variant == 'rocm' %}
     - mkl-include # [x86_64]
     - mkl >=2021,<2022 # [x86_64]
+    - llvm-openmp 
 {{ environ.get('CONDA_ROCM_CONSTRAINT', '') }}
     {% endif %}
     - typing_extensions
@@ -48,6 +49,7 @@ requirements:
     {% if cross_compile_arm64 == 0 %}
       {% if build_variant == 'rocm' %}
     - mkl >=2021,<2022 # [x86_64]
+    - llvm-openmp 
       {% else %}
     - mkl >=2018 # [x86_64]
       {% endif %}
