@@ -65,14 +65,14 @@ set "CONDA_HOME=%CD%\conda"
 set "tmp_conda=%CONDA_HOME%"
 set "miniconda_exe=%CD%\miniconda.exe"
 set "CONDA_EXTRA_ARGS=cpuonly -c pytorch-nightly"
-if "%CUDA_VERSION%" == "116" (
-    set "CONDA_EXTRA_ARGS=pytorch-cuda=11.6 -c nvidia -c pytorch-nightly"
-)
 if "%CUDA_VERSION%" == "117" (
     set "CONDA_EXTRA_ARGS=pytorch-cuda=11.7 -c nvidia -c pytorch-nightly"
 )
 if "%CUDA_VERSION%" == "118" (
     set "CONDA_EXTRA_ARGS=pytorch-cuda=11.8 -c nvidia -c pytorch-nightly"
+)
+if "%CUDA_VERSION%" == "121" (
+    set "CONDA_EXTRA_ARGS=pytorch-cuda=12.1 -c nvidia -c pytorch-nightly"
 )
 
 rmdir /s /q conda
@@ -177,13 +177,13 @@ set INCLUDE=%INCLUDE%;%install_root%\include;%install_root%\include\torch\csrc\a
 set LIB=%LIB%;%install_root%\lib
 set PATH=%PATH%;%install_root%\lib
 
-cl %BUILDER_ROOT%\test_example_code\simple-torch-test.cpp c10.lib torch_cpu.lib /EHsc
+cl %BUILDER_ROOT%\test_example_code\simple-torch-test.cpp c10.lib torch_cpu.lib /EHsc /std:c++17
 if ERRORLEVEL 1 exit /b 1
 
 .\simple-torch-test.exe
 if ERRORLEVEL 1 exit /b 1
 
-cl %BUILDER_ROOT%\test_example_code\check-torch-mkl.cpp c10.lib torch_cpu.lib /EHsc
+cl %BUILDER_ROOT%\test_example_code\check-torch-mkl.cpp c10.lib torch_cpu.lib /EHsc /std:c++17
 if ERRORLEVEL 1 exit /b 1
 
 .\check-torch-mkl.exe
@@ -198,9 +198,9 @@ set BUILD_SPLIT_CUDA=
 if exist "%install_root%\lib\torch_cuda_cu.lib" if exist "%install_root%\lib\torch_cuda_cpp.lib" set BUILD_SPLIT_CUDA=ON
 
 if "%BUILD_SPLIT_CUDA%" == "ON" (
-    cl %BUILDER_ROOT%\test_example_code\check-torch-cuda.cpp torch_cpu.lib c10.lib torch_cuda_cu.lib torch_cuda_cpp.lib /EHsc /link /INCLUDE:?warp_size@cuda@at@@YAHXZ /INCLUDE:?_torch_cuda_cu_linker_symbol_op_cuda@native@at@@YA?AVTensor@2@AEBV32@@Z
+    cl %BUILDER_ROOT%\test_example_code\check-torch-cuda.cpp torch_cpu.lib c10.lib torch_cuda_cu.lib torch_cuda_cpp.lib /EHsc /std:c++17 /link /INCLUDE:?warp_size@cuda@at@@YAHXZ /INCLUDE:?_torch_cuda_cu_linker_symbol_op_cuda@native@at@@YA?AVTensor@2@AEBV32@@Z
 ) else (
-    cl %BUILDER_ROOT%\test_example_code\check-torch-cuda.cpp torch_cpu.lib c10.lib torch_cuda.lib /EHsc /link /INCLUDE:?warp_size@cuda@at@@YAHXZ
+    cl %BUILDER_ROOT%\test_example_code\check-torch-cuda.cpp torch_cpu.lib c10.lib torch_cuda.lib /EHsc /std:c++17 /link /INCLUDE:?warp_size@cuda@at@@YAHXZ
 )
 .\check-torch-cuda.exe
 if ERRORLEVEL 1 exit /b 1

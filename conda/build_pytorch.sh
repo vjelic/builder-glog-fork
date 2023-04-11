@@ -278,15 +278,15 @@ elif [[ "$gpu_arch_type" == 'cuda' ]]; then
     . ./switch_cuda_version.sh "$gpu_arch_version"
     # TODO, simplify after anaconda fixes their cudatoolkit versioning inconsistency.
     # see: https://github.com/conda-forge/conda-forge.github.io/issues/687#issuecomment-460086164
-    if [[ "$desired_cuda" == "11.8" ]]; then
+    if [[ "$desired_cuda" == "12.1" ]]; then
+	export CONDA_CUDATOOLKIT_CONSTRAINT="    - pytorch-cuda >=12.1,<12.2 # [not osx]"
+	export MAGMA_PACKAGE="    - magma-cuda121 # [not osx and not win]"
+    elif [[ "$desired_cuda" == "11.8" ]]; then
         export CONDA_CUDATOOLKIT_CONSTRAINT="    - pytorch-cuda >=11.8,<11.9 # [not osx]"
         export MAGMA_PACKAGE="    - magma-cuda118 # [not osx and not win]"
     elif [[ "$desired_cuda" == "11.7" ]]; then
         export CONDA_CUDATOOLKIT_CONSTRAINT="    - pytorch-cuda >=11.7,<11.8 # [not osx]"
         export MAGMA_PACKAGE="    - magma-cuda117 # [not osx and not win]"
-    elif [[ "$desired_cuda" == "11.6" ]]; then
-        export CONDA_CUDATOOLKIT_CONSTRAINT="    - pytorch-cuda >=11.6,<11.7 # [not osx]"
-        export MAGMA_PACKAGE="    - magma-cuda116 # [not osx and not win]"
     else
         echo "unhandled gpu_arch_version: $gpu_arch_version"
         exit 1
@@ -294,7 +294,7 @@ elif [[ "$gpu_arch_type" == 'cuda' ]]; then
     if [[ "$OSTYPE" != "msys" ]]; then
         # TODO: Remove me when Triton has a proper release channel
         TRITON_SHORTHASH=$(cut -c1-10 $pytorch_rootdir/.github/ci_commit_pins/triton.txt)
-        export CONDA_TRITON_CONSTRAINT="    - torchtriton==2.0.0+${TRITON_SHORTHASH}"
+        export CONDA_TRITON_CONSTRAINT="    - torchtriton==2.1.0+${TRITON_SHORTHASH}"
     fi
 
     build_string_suffix="cuda${CUDA_VERSION}_cudnn${CUDNN_VERSION}_${build_string_suffix}"
@@ -332,12 +332,6 @@ if [[ "$OSTYPE" == "msys" && "$USE_SCCACHE" == "1" ]]; then
     export CONDA_BUILD_EXTRA_ARGS="--dirty"
 else
     export CONDA_BUILD_EXTRA_ARGS=""
-fi
-
-if [[ "$DESIRED_PYTHON" == "3.11" ]]; then
-    # TODO: Remove me when numpy is available in default channel
-    # or copy numpy to pytorch channel
-    export CONDA_BUILD_EXTRA_ARGS="-c malfet ${CONDA_BUILD_EXTRA_ARGS}"
 fi
 
 # Build PyTorch with Gloo's TCP_TLS transport

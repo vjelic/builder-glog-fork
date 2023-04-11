@@ -52,29 +52,17 @@ ENV CUDA_HOME=/usr/local/cuda-${CUDA_VERSION}
 ENV PATH=/usr/local/cuda-${CUDA_VERSION}/bin:$PATH
 ADD ./common/install_cuda.sh install_cuda.sh
 
-FROM cuda as cuda10.2_base
-RUN bash ./install_cuda.sh 10.2
-ENV DESIRED_CUDA=10.2
-
-FROM cuda as cuda11.3_base
-RUN bash ./install_cuda.sh 11.3
-ENV DESIRED_CUDA=11.3
-
-FROM cuda as cuda11.5_base
-RUN bash ./install_cuda.sh 11.5
-ENV DESIRED_CUDA=11.5
-
-FROM cuda as cuda11.6_base
-RUN bash ./install_cuda.sh 11.6
-ENV DESIRED_CUDA=11.6
-
 FROM cuda as cuda11.7_base
 RUN bash ./install_cuda.sh 11.7
 ENV DESIRED_CUDA=11.7
 
-FROM cuda as cuda11.8
+FROM cuda as cuda11.8_base
 RUN bash ./install_cuda.sh 11.8
 ENV DESIRED_CUDA=11.8
+
+FROM cuda as cuda12.1_base
+RUN bash ./install_cuda.sh 12.1
+ENV DESIRE_CUDA=12.1
 
 # Install MNIST test data
 FROM base as mnist
@@ -82,9 +70,9 @@ ADD ./common/install_mnist.sh install_mnist.sh
 RUN bash ./install_mnist.sh
 
 FROM cpu_base as all_cuda_base
-COPY --from=cuda11.6  /usr/local/cuda-11.6 /usr/local/cuda-11.6
 COPY --from=cuda11.7  /usr/local/cuda-11.7 /usr/local/cuda-11.7
 COPY --from=cuda11.8  /usr/local/cuda-11.8 /usr/local/cuda-11.8
+COPY --from=cuda12.1  /usr/local/cuda-12.1 /usr/local/cuda-12.1
 
 FROM base as rocm_base
 ARG ROCM_VERSION=5.2
