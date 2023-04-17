@@ -3,10 +3,15 @@ PACKAGE_NAME ?= magma-rocm5.4
 PYTORCH_ROCM_ARCH ?= gfx906
 
 DOCKER_RUN = docker run -it \
+	--device=/dev/kfd \
+	--device=/dev/dri \
+	--group-add video \
+	--cap-add=SYS_PTRACE \
 	-v $(shell git rev-parse --show-toplevel):/builder \
 	-w /builder \
 	-e ROCM_VERSION=${ROCM_VERSION} \
 	-e PACKAGE_NAME=${PACKAGE_NAME} \
+	-e PACKAGE_VERSION=${PACKAGE_VERSION} \
 	-e PYTORCH_ROCM_ARCH="${PYTORCH_ROCM_ARCH}" \
 	"${MANYLINUX_IMAGE}" \
  	/bin/bash magma/build_magma.sh	
@@ -22,7 +27,8 @@ clean:
 
 .PHONY: magma-rocm5.4
 magma-rocm5.4: ROCM_VERSION := 5.4
-magma-rocm5.4: PACKAGE_NAME := magma-rocm5.4
+magma-rocm5.4: PACKAGE_NAME := magma-rocm
+magma-rocm5.4: PACKAGE_VERSION := rocm5.4_magma
 magma-rocm5.4: PYTORCH_ROCM_ARCH := gfx906
 magma-rocm5.4: MANYLINUX_IMAGE := pytorch/manylinux-builder:rocm5.4.2
 magma-rocm5.4:
@@ -30,7 +36,8 @@ magma-rocm5.4:
 
 .PHONY: magma-rocm5.3
 magma-rocm5.3: ROCM_VERSION := 5.3
-magma-rocm5.3: PACKAGE_NAME := magma-rocm5.3
+magma-rocm5.3: PACKAGE_NAME := magma-rocm
+magma-rocm5.3: PACKAGE_VERSION := rocm5.3-magma
 magma-rocm5.3: PYTORCH_ROCM_ARCH := gfx906
 magma-rocm5.3: MANYLINUX_IMAGE := pytorch/manylinux-builder:rocm5.3
 magma-rocm5.3:

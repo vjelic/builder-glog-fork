@@ -2,6 +2,7 @@
 set -ex
 
 export HIPDIR=/opt/rocm/hip
+export ROCM_PATH=/opt/rocm
 MKLROOT=${MKLROOT:-/opt/intel}
 
 # Temporary for testing
@@ -9,13 +10,11 @@ rm -rf /opt/rocm/magma
 rm -rf /opt/rocm-*/magma
 
 pushd magma
-
 cp make.inc-examples/make.inc.hip-gcc-mkl make.inc
 echo 'LIBDIR += -L$(MKLROOT)/lib' >> make.inc
 if [[ -f "${MKLROOT}/lib/libmkl_core.a" ]]; then
     echo 'LIB = -Wl,--start-group -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -Wl,--end-group -lpthread -lstdc++ -lm -lgomp -lhipblas -lhipsparse' >> make.inc
 fi
-
 echo 'LIB += -Wl,--enable-new-dtags -Wl,--rpath,\$BUILD_PREFIX/lib -Wl,--rpath,$(MKLROOT)/lib -Wl,--rpath,\$BUILD_PREFIX/magma/lib -ldl' >> make.inc
 echo 'DEVCCFLAGS += --gpu-max-threads-per-block=256' >> make.inc
 export PATH="${PATH}:/opt/rocm/bin"
@@ -35,9 +34,7 @@ make -f make.gen.hipMAGMA -j $(nproc)
 LANG=C.UTF-8 make lib/libmagma.so -j $(nproc) MKLROOT="${MKLROOT}"
 
 popd
-cp -r magma $PREFIX/
-#mkdir -p $PREFIX/magma
-#mkdir -p $PREFIX/magma/include
-#mkdir -p $PREFIX/magma/lib
-#cp include/*.h $PREFIX/magma/include/
-#cp lib/libmagma.so $PREFIX/magma/lib/
+mkdir -p $PREFIX/lib $PREFIX/include
+cp magma/include/*.h $PREFIX/include
+cp magma/lib/libmagma.so $PREFIX/lib
+

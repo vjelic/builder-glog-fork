@@ -1,19 +1,27 @@
-{% set version = "2.6.2" %}
-{% set commit = "5959b8783e45f1809812ed96ae762f38ee701972" %}
+{% set magma_version = "2.6.2" %}
+{% set magma_commit = "5959b8783e45f1809812ed96ae762f38ee701972" %}
 
 package:
-  name: "{{ environ.get('PACKAGE_NAME') }}"
-  version:  "{{ version }}"
+  name: "{{ environ.get('PACKAGE_NAME') }}" 
+  version: "{{ environ.get('PACKAGE_VERSION') }}{{ magma_version + '_git+'}}{{  magma_commit[:7] }}"
 
 source:
   git_url: https://bitbucket.org/icl/magma.git
-  git_rev: {{ commit }}
+  git_rev: {{ magma_commit }}
   folder: magma
 
 build:
-  number: 1
   script_env:
     - PYTORCH_ROCM_ARCH
+
+requirements:
+  build:
+    - make
+    - libstdcxx-ng
+    - libgfortran-ng
+    - numpy
+    - mkl <2022
+    - mkl-include <2022
 
 about:
   home: https://bitbucket.org/icl/magma.git
