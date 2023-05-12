@@ -30,6 +30,12 @@ else
   echo 'ERROR: either the source or destination path for libMIOpen.so.1.0 does not exist'
   exit 1
 fi
+# Copy db files over existing
+source="opt/rocm*/share/miopen/db/*"
+dest="/opt/rocm-${ROCM_VERSION}*/share/miopen/db/"
+# Use backslash to run cp in (non-aliased) non-interactive mode
+\cp -R $source $dest
+
 echo "libMIOpen so file from RPM copied to existing MIOpen install..."
 
 # Clean up extracted dir
