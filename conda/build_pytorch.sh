@@ -310,6 +310,8 @@ elif [[ "$gpu_arch_type" == 'rocm' ]]; then
         export CONDA_ROCM_CONSTRAINT="    - pytorch-rocm >=5.4,<5.5 # [not osx and not win]"
     elif [[ "$gpu_arch_version" == "5.5" ]]; then
         export CONDA_ROCM_CONSTRAINT="    - pytorch-rocm >=5.5,<5.6 # [not osx and not win]"
+    elif [[ "$gpu_arch_version" == "5.6" ]]; then
+        export CONDA_ROCM_CONSTRAINT="    - pytorch-rocm >=5.6,<5.7 # [not osx and not win]"
     else
         echo "unhandled gpu_arch_version: $gpu_arch_version"
         exit 1
