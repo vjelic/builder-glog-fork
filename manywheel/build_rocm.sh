@@ -155,7 +155,7 @@ MIOPEN_SHARE_DST=share/miopen/db
 MIOPEN_SHARE_FILES=($(ls $MIOPEN_SHARE_SRC | grep -E $ARCH))
 
 # RCCL library files
-RCCL_SHARE_SRC=$ROCM_HOME/rccl/lib/msccl-algorithms
+RCCL_SHARE_SRC=$ROCM_HOME/lib/msccl-algorithms
 RCCL_SHARE_DST=lib/msccl-algorithms
 RCCL_SHARE_FILES=($(ls $RCCL_SHARE_SRC))
 
