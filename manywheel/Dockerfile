@@ -29,6 +29,7 @@ RUN yum install -y python3-pip && \
     ln -s /usr/local/bin/cmake /usr/bin/cmake
 
 RUN yum install -y autoconf aclocal automake make
+RUN yum update -y ca-certificates && update-ca-trust
 
 FROM base as openssl
 # Install openssl (this must precede `build python` step)
