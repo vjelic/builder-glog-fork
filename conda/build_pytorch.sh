@@ -302,16 +302,12 @@ elif [[ "$gpu_arch_type" == 'rocm' ]]; then
     export PYTORCH_BUILD_VARIANT="rocm"
     export USE_ROCM=1
     export MAGMA_PACKAGE="    - magma-rocm # [not osx and not win]"
-    if [[ "$gpu_arch_version" == "5.2" ]]; then
-        export CONDA_ROCM_CONSTRAINT="    - pytorch-rocm >=5.2,<5.3 # [not osx and not win]"
-    elif [[ "$gpu_arch_version" == "5.3" ]]; then
-        export CONDA_ROCM_CONSTRAINT="    - pytorch-rocm >=5.3,<5.4 # [not osx and not win]"
-    elif [[ "$gpu_arch_version" == "5.4" ]]; then
-        export CONDA_ROCM_CONSTRAINT="    - pytorch-rocm >=5.4,<5.5 # [not osx and not win]"
-    elif [[ "$gpu_arch_version" == "5.5" ]]; then
+    if [[ "$gpu_arch_version" == "5.5" ]]; then
         export CONDA_ROCM_CONSTRAINT="    - pytorch-rocm >=5.5,<5.6 # [not osx and not win]"
     elif [[ "$gpu_arch_version" == "5.6" ]]; then
         export CONDA_ROCM_CONSTRAINT="    - pytorch-rocm >=5.6,<5.7 # [not osx and not win]"
+    elif [[ "$gpu_arch_version" == "5.7" ]]; then
+        export CONDA_ROCM_CONSTRAINT="    - pytorch-rocm >=5.7,<5.8 # [not osx and not win]"
     else
         echo "unhandled gpu_arch_version: $gpu_arch_version"
         exit 1
