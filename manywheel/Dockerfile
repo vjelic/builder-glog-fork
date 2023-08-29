@@ -160,6 +160,8 @@ ARG ROCM_VERSION=3.7
 ARG PYTORCH_ROCM_ARCH
 ARG PYTORCH_BRANCH
 ENV PYTORCH_ROCM_ARCH ${PYTORCH_ROCM_ARCH}
+ENV ROCM_VERSION ${ROCM_VERSION}
+
 # Adding ROCM_PATH env var so that cmake find HIP works
 ENV ROCM_PATH /opt/rocm
 # No need to install ROCm as base docker image should have full ROCm install
