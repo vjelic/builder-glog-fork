@@ -22,19 +22,15 @@ case ${GPU_ARCH_TYPE} in
       BASE_TARGET=cuda${GPU_ARCH_VERSION}_base
       DOCKER_TAG=cuda${GPU_ARCH_VERSION}
     fi
-    DEVTOOLSET_VERSION="9"
-    if [[ ${GPU_ARCH_VERSION:0:2} == "10" ]]; then
-      DEVTOOLSET_VERSION="7"
-    fi
     GPU_IMAGE=nvidia/cuda:${GPU_ARCH_VERSION}-devel-centos7
-    DOCKER_GPU_BUILD_ARG="--build-arg BASE_CUDA_VERSION=${GPU_ARCH_VERSION} --build-arg DEVTOOLSET_VERSION=${DEVTOOLSET_VERSION}"
+    DOCKER_GPU_BUILD_ARG="--build-arg BASE_CUDA_VERSION=${GPU_ARCH_VERSION} --build-arg DEVTOOLSET_VERSION=9"
     ;;
   rocm)
     BASE_TARGET=rocm_base
     DOCKER_TAG=rocm${GPU_ARCH_VERSION}
     GPU_IMAGE=rocm/dev-centos-7:latest
     PYTORCH_ROCM_ARCH="gfx900;gfx906;gfx908"
-    DOCKER_GPU_BUILD_ARG="--build-arg ROCM_VERSION=${GPU_ARCH_VERSION} --build-arg PYTORCH_ROCM_ARCH=${PYTORCH_ROCM_ARCH}"
+    DOCKER_GPU_BUILD_ARG="--build-arg ROCM_VERSION=${GPU_ARCH_VERSION} --build-arg PYTORCH_ROCM_ARCH=${PYTORCH_ROCM_ARCH} --build-arg DEVTOOLSET_VERSION=9"
     ;;
   *)
     echo "ERROR: Unrecognized GPU_ARCH_TYPE: ${GPU_ARCH_TYPE}"

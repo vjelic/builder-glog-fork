@@ -103,13 +103,11 @@ if [[ -z "$EXTRA_CAFFE2_CMAKE_FLAGS" ]]; then
     # These are passed to tools/build_pytorch_libs.sh::build_caffe2()
     EXTRA_CAFFE2_CMAKE_FLAGS=()
 fi
+
 if [[ -z "$DESIRED_PYTHON" ]]; then
-    if [[ "$OSTYPE" == "msys" ]]; then
-        DESIRED_PYTHON=('3.5' '3.6' '3.7')
-    else
-        DESIRED_PYTHON=('2.7' '3.5' '3.6' '3.7' '3.8')
-    fi
+    DESIRED_PYTHON=('3.8')
 fi
+
 if [[ "$OSTYPE" == "darwin"* ]]; then
     DEVELOPER_DIR=/Applications/Xcode_13.3.1.app/Contents/Developer
 fi
@@ -210,7 +208,7 @@ if [[ "$(uname)" == 'Darwin' ]]; then
     miniconda_sh="${MAC_PACKAGE_WORK_DIR}/miniconda.sh"
     rm -rf "$tmp_conda"
     rm -f "$miniconda_sh"
-    retry curl -sS https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -o "$miniconda_sh"
+    retry curl -sS https://repo.anaconda.com/miniconda/Miniconda3-py310_23.5.2-0-MacOSX-x86_64.sh -o "$miniconda_sh"
     chmod +x "$miniconda_sh" && \
         "$miniconda_sh" -b -p "$tmp_conda" && \
         rm "$miniconda_sh"
@@ -221,7 +219,7 @@ elif [[ "$OSTYPE" == "msys" ]]; then
     export miniconda_exe="${WIN_PACKAGE_WORK_DIR}\\miniconda.exe"
     rm -rf "$tmp_conda"
     rm -f "$miniconda_exe"
-    curl -sSk https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe -o "$miniconda_exe"
+    curl -sSk https://repo.anaconda.com/miniconda/Miniconda3-py310_23.5.2-0-Windows-x86_64.exe -o "$miniconda_exe"
     "$SOURCE_DIR/install_conda.bat" && rm "$miniconda_exe"
     pushd $tmp_conda
     export PATH="$(pwd):$(pwd)/Library/usr/bin:$(pwd)/Library/bin:$(pwd)/Scripts:$(pwd)/bin:$PATH"
@@ -278,15 +276,12 @@ elif [[ "$gpu_arch_type" == 'cuda' ]]; then
     . ./switch_cuda_version.sh "$gpu_arch_version"
     # TODO, simplify after anaconda fixes their cudatoolkit versioning inconsistency.
     # see: https://github.com/conda-forge/conda-forge.github.io/issues/687#issuecomment-460086164
-    if [[ "$desired_cuda" == "11.8" ]]; then
+    if [[ "$desired_cuda" == "12.1" ]]; then
+	export CONDA_CUDATOOLKIT_CONSTRAINT="    - pytorch-cuda >=12.1,<12.2 # [not osx]"
+	export MAGMA_PACKAGE="    - magma-cuda121 # [not osx and not win]"
+    elif [[ "$desired_cuda" == "11.8" ]]; then
         export CONDA_CUDATOOLKIT_CONSTRAINT="    - pytorch-cuda >=11.8,<11.9 # [not osx]"
         export MAGMA_PACKAGE="    - magma-cuda118 # [not osx and not win]"
-    elif [[ "$desired_cuda" == "11.7" ]]; then
-        export CONDA_CUDATOOLKIT_CONSTRAINT="    - pytorch-cuda >=11.7,<11.8 # [not osx]"
-        export MAGMA_PACKAGE="    - magma-cuda117 # [not osx and not win]"
-    elif [[ "$desired_cuda" == "11.6" ]]; then
-        export CONDA_CUDATOOLKIT_CONSTRAINT="    - pytorch-cuda >=11.6,<11.7 # [not osx]"
-        export MAGMA_PACKAGE="    - magma-cuda116 # [not osx and not win]"
     else
         echo "unhandled gpu_arch_version: $gpu_arch_version"
         exit 1
@@ -294,7 +289,7 @@ elif [[ "$gpu_arch_type" == 'cuda' ]]; then
     if [[ "$OSTYPE" != "msys" ]]; then
         # TODO: Remove me when Triton has a proper release channel
         TRITON_SHORTHASH=$(cut -c1-10 $pytorch_rootdir/.github/ci_commit_pins/triton.txt)
-        export CONDA_TRITON_CONSTRAINT="    - torchtriton==2.0.0+${TRITON_SHORTHASH}"
+        export CONDA_TRITON_CONSTRAINT="    - torchtriton==2.1.0+${TRITON_SHORTHASH}"
     fi
 
     build_string_suffix="cuda${CUDA_VERSION}_cudnn${CUDNN_VERSION}_${build_string_suffix}"
@@ -322,20 +317,12 @@ fi
 
 # Some tricks for sccache with conda builds on Windows
 if [[ "$OSTYPE" == "msys" && "$USE_SCCACHE" == "1" ]]; then
-    if [[ ! -d "/c/cb" ]]; then
-        rm -rf /c/cb
-    fi
+    rm -rf /c/cb
     mkdir -p /c/cb/pytorch_1000000000000
     export CONDA_BLD_PATH="C:\\cb"
     export CONDA_BUILD_EXTRA_ARGS="--dirty"
 else
     export CONDA_BUILD_EXTRA_ARGS=""
-fi
-
-if [[ "$DESIRED_PYTHON" == "3.11" ]]; then
-    # TODO: Remove me when numpy is available in default channel
-    # or copy numpy to pytorch channel
-    export CONDA_BUILD_EXTRA_ARGS="-c malfet ${CONDA_BUILD_EXTRA_ARGS}"
 fi
 
 # Build PyTorch with Gloo's TCP_TLS transport
@@ -379,12 +366,14 @@ for py_ver in "${DESIRED_PYTHON[@]}"; do
     # Build the package
     echo "Build $build_folder for Python version $py_ver"
     conda config --set anaconda_upload no
-    conda install -y conda-package-handling conda==22.9.0
 
     if [[ "$OSTYPE" == "msys" ]]; then
       # Don't run tests on windows (they were ignored mostly anyways)
       NO_TEST="--no-test"
+      # Fow windows need to keep older conda version
+      conda install -y conda-package-handling conda==22.9.0
     else
+      conda install -y conda-package-handling conda==23.5.2
       # NS: To be removed after conda docker images are updated
       conda update -y conda-build
     fi
@@ -459,7 +448,12 @@ done
 
 # Cleanup the tricks for sccache with conda builds on Windows
 if [[ "$OSTYPE" == "msys" ]]; then
+    # Please note sometimes we get Device or resource busy during
+    # this cleanup step. We don't want to fail the build because of this
+    # hence adding +e, -e around the cleanup step
+    set +e
     rm -rf /c/cb/pytorch_1000000000000
+    set -e
     unset CONDA_BLD_PATH
 fi
 unset CONDA_BUILD_EXTRA_ARGS

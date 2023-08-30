@@ -44,7 +44,11 @@ del python-amd64.exe
 curl --retry 3 -kL "%PYTHON_INSTALLER_URL%" --output python-amd64.exe
 if errorlevel 1 exit /b 1
 
-start /wait "" python-amd64.exe /quiet InstallAllUsers=1 PrependPath=1 Include_test=0 TargetDir=%CD%\Python
+:: According to https://docs.python.org/3/using/windows.html, setting PrependPath to 1 will prepend
+:: the installed Python to PATH system-wide. Even calling set PATH=%ORIG_PATH% later on won't make
+:: a change. As the builder directory will be removed after the smoke test, all subsequent non-binary
+:: jobs will fail to find any Python executable there
+start /wait "" python-amd64.exe /quiet InstallAllUsers=1 PrependPath=0 Include_test=0 TargetDir=%CD%\Python
 if errorlevel 1 exit /b 1
 
 set "PATH=%CD%\Python%PYTHON_VERSION%\Scripts;%CD%\Python;%PATH%"
@@ -65,14 +69,11 @@ set "CONDA_HOME=%CD%\conda"
 set "tmp_conda=%CONDA_HOME%"
 set "miniconda_exe=%CD%\miniconda.exe"
 set "CONDA_EXTRA_ARGS=cpuonly -c pytorch-nightly"
-if "%CUDA_VERSION%" == "116" (
-    set "CONDA_EXTRA_ARGS=pytorch-cuda=11.6 -c nvidia -c pytorch-nightly"
-)
-if "%CUDA_VERSION%" == "117" (
-    set "CONDA_EXTRA_ARGS=pytorch-cuda=11.7 -c nvidia -c pytorch-nightly"
-)
 if "%CUDA_VERSION%" == "118" (
     set "CONDA_EXTRA_ARGS=pytorch-cuda=11.8 -c nvidia -c pytorch-nightly"
+)
+if "%CUDA_VERSION%" == "121" (
+    set "CONDA_EXTRA_ARGS=pytorch-cuda=12.1 -c nvidia -c pytorch-nightly"
 )
 
 rmdir /s /q conda
@@ -90,7 +91,9 @@ call %CONDA_HOME%\condabin\activate.bat testenv
 if errorlevel 1 exit /b 1
 
 :: do conda install to make sure all the dependencies are installed
-call conda install -yq pytorch %CONDA_EXTRA_ARGS%
+:: Install numpy see: https://github.com/pytorch/pytorch/issues/107228
+:: todo: Remove numpy install once the issue above is resolved
+call conda install -yq numpy pytorch %CONDA_EXTRA_ARGS%
 if ERRORLEVEL 1 exit /b 1
 
 set /a CUDA_VER=%CUDA_VERSION%
@@ -177,13 +180,13 @@ set INCLUDE=%INCLUDE%;%install_root%\include;%install_root%\include\torch\csrc\a
 set LIB=%LIB%;%install_root%\lib
 set PATH=%PATH%;%install_root%\lib
 
-cl %BUILDER_ROOT%\test_example_code\simple-torch-test.cpp c10.lib torch_cpu.lib /EHsc
+cl %BUILDER_ROOT%\test_example_code\simple-torch-test.cpp c10.lib torch_cpu.lib /EHsc /std:c++17
 if ERRORLEVEL 1 exit /b 1
 
 .\simple-torch-test.exe
 if ERRORLEVEL 1 exit /b 1
 
-cl %BUILDER_ROOT%\test_example_code\check-torch-mkl.cpp c10.lib torch_cpu.lib /EHsc
+cl %BUILDER_ROOT%\test_example_code\check-torch-mkl.cpp c10.lib torch_cpu.lib /EHsc /std:c++17
 if ERRORLEVEL 1 exit /b 1
 
 .\check-torch-mkl.exe
@@ -198,9 +201,9 @@ set BUILD_SPLIT_CUDA=
 if exist "%install_root%\lib\torch_cuda_cu.lib" if exist "%install_root%\lib\torch_cuda_cpp.lib" set BUILD_SPLIT_CUDA=ON
 
 if "%BUILD_SPLIT_CUDA%" == "ON" (
-    cl %BUILDER_ROOT%\test_example_code\check-torch-cuda.cpp torch_cpu.lib c10.lib torch_cuda_cu.lib torch_cuda_cpp.lib /EHsc /link /INCLUDE:?warp_size@cuda@at@@YAHXZ /INCLUDE:?_torch_cuda_cu_linker_symbol_op_cuda@native@at@@YA?AVTensor@2@AEBV32@@Z
+    cl %BUILDER_ROOT%\test_example_code\check-torch-cuda.cpp torch_cpu.lib c10.lib torch_cuda_cu.lib torch_cuda_cpp.lib /EHsc /std:c++17 /link /INCLUDE:?warp_size@cuda@at@@YAHXZ /INCLUDE:?_torch_cuda_cu_linker_symbol_op_cuda@native@at@@YA?AVTensor@2@AEBV32@@Z
 ) else (
-    cl %BUILDER_ROOT%\test_example_code\check-torch-cuda.cpp torch_cpu.lib c10.lib torch_cuda.lib /EHsc /link /INCLUDE:?warp_size@cuda@at@@YAHXZ
+    cl %BUILDER_ROOT%\test_example_code\check-torch-cuda.cpp torch_cpu.lib c10.lib torch_cuda.lib /EHsc /std:c++17 /link /INCLUDE:?warp_size@cuda@at@@YAHXZ
 )
 .\check-torch-cuda.exe
 if ERRORLEVEL 1 exit /b 1

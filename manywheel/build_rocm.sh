@@ -14,6 +14,8 @@ export USE_STATIC_NCCL=1
 export ATEN_STATIC_CUDA=1
 export USE_CUDA_STATIC_LINK=1
 export INSTALL_TEST=0 # dont install test binaries into site-packages
+# Set RPATH instead of RUNPATH when using patchelf to avoid LD_LIBRARY_PATH override
+export FORCE_RPATH="--force-rpath"
 
 # Keep an array of cmake variables to add to
 if [[ -z "$CMAKE_ARGS" ]]; then
@@ -78,16 +80,13 @@ ROCM_SO_FILES=(
     "libhipblas.so"
     "libhipfft.so"
     "libhiprand.so"
+    "libhipsolver.so"
     "libhipsparse.so"
     "libhsa-runtime64.so"
     "libamd_comgr.so"
     "libmagma.so"
     "librccl.so"
     "librocblas.so"
-    "librocfft-device-0.so"
-    "librocfft-device-1.so"
-    "librocfft-device-2.so"
-    "librocfft-device-3.so" 
     "librocfft.so"
     "librocm_smi64.so"   
     "librocrand.so"
@@ -96,6 +95,17 @@ ROCM_SO_FILES=(
     "libroctracer64.so"
     "libroctx64.so"
 )
+
+if [[ $ROCM_INT -ge 50600 ]]; then
+    ROCM_SO_FILES+=("libhipblaslt.so")
+fi
+
+if [[ $ROCM_INT -lt 50500 ]]; then
+    ROCM_SO_FILES+=("librocfft-device-0.so")
+    ROCM_SO_FILES+=("librocfft-device-1.so")
+    ROCM_SO_FILES+=("librocfft-device-2.so")
+    ROCM_SO_FILES+=("librocfft-device-3.so")
+fi
 
 if [[ $ROCM_INT -ge 50400 ]]; then
     ROCM_SO_FILES+=("libhiprtc.so")
@@ -159,6 +169,10 @@ do
     if [[ -z $file_path ]]; then 
         file_path=($(find $ROCM_HOME/ -name "$lib")) # Then search in ROCM_HOME
     fi
+    if [[ -z $file_path ]]; then
+	echo "Error: Library file $lib is not found." >&2
+	exit 1
+    fi
     ROCM_SO_PATHS[${#ROCM_SO_PATHS[@]}]="$file_path" # Append lib to array
 done
 
@@ -181,6 +195,37 @@ DEPS_AUX_DSTLIST=(
     "${ROCBLAS_LIB_FILES[@]/#/$ROCBLAS_LIB_DST/}"
     "share/libdrm/amdgpu.ids"
 )
+
+if [[ $ROCM_INT -ge 50500 ]]; then
+    # MIOpen library files
+    MIOPEN_SHARE_SRC=$ROCM_HOME/share/miopen/db
+    MIOPEN_SHARE_DST=share/miopen/db
+    MIOPEN_SHARE_FILES=($(ls $MIOPEN_SHARE_SRC | grep -E $ARCH))
+
+    DEPS_AUX_SRCLIST+=(${MIOPEN_SHARE_FILES[@]/#/$MIOPEN_SHARE_SRC/})
+    DEPS_AUX_DSTLIST+=(${MIOPEN_SHARE_FILES[@]/#/$MIOPEN_SHARE_DST/})
+elif [[ $ROCM_INT -ge 50600 ]]; then
+    # RCCL library files
+    RCCL_SHARE_SRC=$ROCM_HOME/lib/msccl-algorithms
+    RCCL_SHARE_DST=lib/msccl-algorithms
+    RCCL_SHARE_FILES=($(ls $RCCL_SHARE_SRC))
+
+    DEPS_AUX_SRCLIST+=(${RCCL_SHARE_FILES[@]/#/$RCCL_SHARE_SRC/})
+    DEPS_AUX_DSTLIST+=(${RCCL_SHARE_FILES[@]/#/$RCCL_SHARE_DST/})
+fi
+
+# Add triton install dependency
+if [[ $(uname) == "Linux" ]]; then
+    TRITON_SHORTHASH=$(cut -c1-10 $PYTORCH_ROOT/.ci/docker/ci_commit_pins/triton-rocm.txt)
+    TRITON_VERSION=$(cat $PYTORCH_ROOT/.ci/docker/triton_version.txt)
+
+    if [[ -z "$PYTORCH_EXTRA_INSTALL_REQUIREMENTS" ]]; then
+        export PYTORCH_EXTRA_INSTALL_REQUIREMENTS="pytorch-triton-rocm==${TRITON_VERSION}+${TRITON_SHORTHASH}"
+    else
+        export PYTORCH_EXTRA_INSTALL_REQUIREMENTS="${PYTORCH_EXTRA_INSTALL_REQUIREMENTS} | pytorch-triton-rocm==${TRITON_VERSION}+${TRITON_SHORTHASH}"
+    fi
+fi
+
 
 echo "PYTORCH_ROCM_ARCH: ${PYTORCH_ROCM_ARCH}"
 

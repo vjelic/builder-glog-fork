@@ -161,9 +161,12 @@ class GitRepo:
         self.repo_dir = path
         self.remote = remote
 
+    def _run_git_cmd(self, *args) -> str:
+        return _check_output(['git', '-C', self.repo_dir] + list(args))
+
     def _run_git_log(self, revision_range) -> List[GitCommit]:
-        log = _check_output(['git', '-C', self.repo_dir, 'log',
-                             '--format=fuller', '--date=unix', revision_range, '--', '.']).split("\n")
+        log = self._run_git_cmd('log', '--format=fuller',
+                             '--date=unix', revision_range, '--', '.').split("\n")
         rc: List[GitCommit] = []
         cur_msg: List[str] = []
         for line in log:
@@ -178,6 +181,18 @@ class GitRepo:
 
     def get_commit_list(self, from_ref, to_ref) -> List[GitCommit]:
         return self._run_git_log(f"{self.remote}/{from_ref}..{self.remote}/{to_ref}")
+
+    def get_ghstack_orig_branches(self) -> List[str]:
+        return [x.strip() for x in self._run_git_cmd("branch", "--remotes", "--list", self.remote + "/gh/*/orig").strip().split("\n")]
+
+    def show_ref(self, ref) -> str:
+        return self._run_git_cmd("show-ref", ref).split(" ")[0]
+
+    def merge_base(self, ref1, ref2) -> str:
+        return self._run_git_cmd("merge-base", ref1, ref2).strip()
+
+    def rev_list(self, ref):
+        return self._run_git_cmd("rev-list", f"{self.remote}/main..{ref}").strip().split()
 
 
 def build_commit_dict(commits: List[GitCommit]) -> Dict[str, GitCommit]:
@@ -338,16 +353,16 @@ def print_contributor_stats(commits, delta: Optional[timedelta] = None) -> None:
 def commits_missing_in_branch(repo: GitRepo, branch: str, orig_branch: str, milestone_idx: int) -> None:
     def get_commits_dict(x, y):
         return build_commit_dict(repo.get_commit_list(x, y))
-    master_commits = get_commits_dict(orig_branch, 'master')
+    main_commits = get_commits_dict(orig_branch, 'main')
     release_commits = get_commits_dict(orig_branch, branch)
-    print(f"len(master_commits)={len(master_commits)}")
+    print(f"len(main_commits)={len(main_commits)}")
     print(f"len(release_commits)={len(release_commits)}")
     print("URL;Title;Status")
     for issue in gh_get_milestone_issues('pytorch', 'pytorch', milestone_idx, IssueState.ALL):
         html_url, state = issue["html_url"], issue["state"]
         # Skip closed states if they were landed before merge date
         if state == "closed":
-            mentioned_after_cut = any(html_url in commit_message for commit_message in master_commits.values())
+            mentioned_after_cut = any(html_url in commit_message for commit_message in main_commits.values())
             # If issue is not mentioned after cut, that it must be present in release branch
             if not mentioned_after_cut:
                 continue
@@ -356,6 +371,22 @@ def commits_missing_in_branch(repo: GitRepo, branch: str, orig_branch: str, mile
             if mentioned_in_release:
                 continue
         print(f'{html_url};{issue["title"]};{state}')
+
+
+def analyze_stacks(repo: GitRepo) -> None:
+    from tqdm.contrib.concurrent import thread_map
+    branches = repo.get_ghstack_orig_branches()
+    stacks_by_author: Dict[str, List[int]] = {}
+    for branch,rv_commits in thread_map(lambda x: (x, repo.rev_list(x)), branches, max_workers=10):
+        author = branch.split("/")[2]
+        if author not in stacks_by_author:
+            stacks_by_author[author]=[]
+        stacks_by_author[author].append(len(rv_commits))
+    for author, slen in sorted(stacks_by_author.items(), key=lambda x:len(x[1]), reverse=True):
+        if len(slen) == 1:
+            print(f"{author} has 1 stack of depth {slen[0]}")
+            continue
+        print(f"{author} has {len(slen)} stacks max depth is {max(slen)} avg depth is {sum(slen)/len(slen):.2f} mean is {slen[len(slen)//2]}")
 
 
 def parse_arguments():
@@ -375,6 +406,7 @@ def parse_arguments():
     parser.add_argument("--print-reverts", action="store_true")
     parser.add_argument("--contributor-stats", action="store_true")
     parser.add_argument("--missing-in-branch", action="store_true")
+    parser.add_argument("--analyze-stacks", action="store_true")
     return parser.parse_args()
 
 
@@ -391,6 +423,10 @@ def main():
                 remote = key
 
     repo = GitRepo(args.repo_path, remote)
+
+    if args.analyze_stacks:
+        analyze_stacks(repo)
+        return
 
     if args.missing_in_branch:
         # Use milestone idx or search it along milestone titles
@@ -414,7 +450,7 @@ def main():
 
     print(f"Parsing git history with remote {remote}...", end='', flush=True)
     start_time = time.time()
-    x = repo._run_git_log(f"{remote}/master")
+    x = repo._run_git_log(f"{remote}/main")
     print(f"done in {time.time()-start_time:.1f} sec")
     if args.analyze_reverts:
         analyze_reverts(x)
