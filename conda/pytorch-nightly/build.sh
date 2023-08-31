@@ -6,8 +6,6 @@ export CMAKE_PREFIX_PATH=$PREFIX
 export TH_BINARY_BUILD=1 # links CPU BLAS libraries thrice in a row (was needed for some MKL static linkage)
 export PYTORCH_BUILD_VERSION=$PKG_VERSION
 export PYTORCH_BUILD_NUMBER=$PKG_BUILDNUM
-export USE_LLVM="/opt/llvm_no_cxx11_abi"
-export LLVM_DIR="$USE_LLVM/lib/cmake/llvm"
 export PACKAGE_TYPE="conda"
 
 # set OPENSSL_ROOT_DIR=/opt/openssl if it exists
@@ -53,6 +51,8 @@ else
     build_with_rocm=1
 fi
 if [[ -n "$build_with_cuda" ]]; then
+    export USE_LLVM="/opt/llvm_no_cxx11_abi"
+    export LLVM_DIR="$USE_LLVM/lib/cmake/llvm"
     export TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
     TORCH_CUDA_ARCH_LIST="5.0;6.0;6.1;7.0;7.5;8.0;8.6"
     export USE_STATIC_CUDNN=1 # links cudnn statically (driven by tools/setup_helpers/cudnn.py)
@@ -83,11 +83,11 @@ if [[ -n "$build_with_cuda" ]]; then
     # export USE_CUDA_STATIC_LINK=1 # links libcaffe2_gpu.so with static CUDA libs. Likely both these flags can be de-duplicated
 fi
 if [[ -n "$build_with_rocm" ]]; then
-    export HIP_PATH=$PREFIX/hip
     export ROCM_PATH=$PREFIX
     export ROCM_SOURCE_DIR=$PREFIX
     export USE_ROCM=1
     export USE_MAGMA=1
+    hipconfig -f
     python tools/amd_build/build_amd.py
 fi
 
