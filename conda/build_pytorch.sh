@@ -309,7 +309,7 @@ elif [[ "$gpu_arch_type" == 'rocm' ]]; then
     fi
 
     if [[ -n "$PYTORCH_BUILD_STRING_A" ]]; then
-        build_string_suffix="rocm${gpu_arch_version}_${PYTORCH_BUILD_STRING_A}_${build_string_suffix}"
+        build_string_suffix="rocm${gpu_arch_version}${PYTORCH_BUILD_STRING_A}_${build_string_suffix}"
     else
         build_string_suffix="rocm${gpu_arch_version}_${build_string_suffix}"
     fi
