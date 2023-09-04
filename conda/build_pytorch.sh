@@ -310,9 +310,9 @@ elif [[ "$gpu_arch_type" == 'rocm' ]]; then
 
     if [[ "$OSTYPE" != "msys" ]]; then
         # TRITON_SHORTHASH=$(cut -c1-10 $pytorch_rootdir/.ci/docker/ci_commit_pins/triton-rocm.txt)
-        TRITON_VERSION=$(cat $pytorch_rootdir/.ci/docker/triton_version.txt)
+        # TRITON_VERSION=$(cat $pytorch_rootdir/.ci/docker/triton_version.txt)
         # export CONDA_TRITON_CONSTRAINT="    - pytorch-triton-rocm==${TRITON_VERSION}+${TRITON_SHORTHASH}"
-        export CONDA_TRITON_CONSTRAINT="    - pytorch-triton-rocm==${TRITON_VERSION}"
+        export CONDA_TRITON_CONSTRAINT="    - pytorch-triton-rocm >=2.0"
     fi
 
     if [[ -n "$PYTORCH_BUILD_STRING_A" ]]; then
