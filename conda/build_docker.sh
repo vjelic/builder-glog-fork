@@ -19,7 +19,7 @@ case ${GPU_ARCH_TYPE} in
       BASE_TARGET=all_cuda_base
       DOCKER_TAG=all_cuda
     else
-      BASE_TARGET=cuda${GPU_ARCH_VERSION}_base
+      BASE_TARGET=cuda${GPU_ARCH_VERSION}
       DOCKER_TAG=cuda${GPU_ARCH_VERSION}
     fi
     GPU_IMAGE=nvidia/cuda:${GPU_ARCH_VERSION}-devel-centos7
