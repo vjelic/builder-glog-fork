@@ -182,7 +182,7 @@ if [[ $CUDA_VERSION == "12.1" ]]; then
         export NCCL_INCLUDE_DIR="/usr/local/cuda/include/"
         export NCCL_LIB_DIR="/usr/local/cuda/lib64/"
     fi
-elif [[ $CUDA_VERSION == "11.7" || $CUDA_VERSION == "11.8" ]]; then
+elif [[ $CUDA_VERSION == "11.8" ]]; then
     export USE_STATIC_CUDNN=0
     # Try parallelizing nvcc as well
     export TORCH_NVCC_FLAGS="-Xfatbin -compress-all --threads 2"
@@ -208,6 +208,7 @@ elif [[ $CUDA_VERSION == "11.7" || $CUDA_VERSION == "11.8" ]]; then
             "/usr/local/cuda/lib64/libcudart.so.11.0"
             "/usr/local/cuda/lib64/libnvToolsExt.so.1"
             "/usr/local/cuda/lib64/libnvrtc.so.11.2"    # this is not a mistake, it links to more specific cuda version
+            "/usr/local/cuda/lib64/libnvrtc-builtins.so.11.8"
         )
         DEPS_SONAME+=(
             "libcudnn_adv_infer.so.8"
@@ -222,23 +223,8 @@ elif [[ $CUDA_VERSION == "11.7" || $CUDA_VERSION == "11.8" ]]; then
             "libcudart.so.11.0"
             "libnvToolsExt.so.1"
             "libnvrtc.so.11.2"
+            "libnvrtc-builtins.so.11.8"
         )
-        if [[ $CUDA_VERSION == "11.7" ]]; then
-            DEPS_LIST+=(
-                "/usr/local/cuda/lib64/libnvrtc-builtins.so.11.7"
-            )
-            DEPS_SONAME+=(
-                "libnvrtc-builtins.so.11.7"
-            )
-        fi
-        if [[ $CUDA_VERSION == "11.8" ]]; then
-            DEPS_LIST+=(
-                "/usr/local/cuda/lib64/libnvrtc-builtins.so.11.8"
-            )
-            DEPS_SONAME+=(
-                "libnvrtc-builtins.so.11.8"
-            )
-        fi
     else
         echo "Using nvidia libs from pypi."
         CUDA_RPATHS=(
@@ -272,9 +258,14 @@ else
 fi
 
 # TODO: Remove me when Triton has a proper release channel
-if [[ $(uname) == "Linux" && -z "$PYTORCH_EXTRA_INSTALL_REQUIREMENTS" ]]; then
+if [[ $(uname) == "Linux" ]]; then
     TRITON_SHORTHASH=$(cut -c1-10 $PYTORCH_ROOT/.github/ci_commit_pins/triton.txt)
-    export PYTORCH_EXTRA_INSTALL_REQUIREMENTS="pytorch-triton==2.1.0+${TRITON_SHORTHASH}"
+
+    if [[ -z "$PYTORCH_EXTRA_INSTALL_REQUIREMENTS" ]]; then
+        export PYTORCH_EXTRA_INSTALL_REQUIREMENTS="pytorch-triton==2.1.0+${TRITON_SHORTHASH}"
+    else
+        export PYTORCH_EXTRA_INSTALL_REQUIREMENTS="${PYTORCH_EXTRA_INSTALL_REQUIREMENTS} | pytorch-triton==2.1.0+${TRITON_SHORTHASH}"
+    fi
 fi
 
 # builder/test.sh requires DESIRED_CUDA to know what tests to exclude

@@ -1,4 +1,4 @@
-# CUDA Upgrade Guide/Runbook
+# CUDA/CUDNN Upgrade Runbook
 
 So you wanna upgrade PyTorch to support a new CUDA? Follow these steps in order! They are adapted from previous CUDA upgrade processes.
 
@@ -11,6 +11,7 @@ Here is the supported matrix for CUDA and CUDNN
 | --- | --- | --- |
 | 11.7 | 8.5.0.96 | Stable CUDA Release |
 | 11.8 | 8.7.0.84 | Latest CUDA Release |
+| 12.1 | 8.9.2.26  | Latest CUDA Nightly |
 
 
 ### B. Check the package availability
@@ -51,7 +52,7 @@ There are three types of Docker containers we maintain in order to build Linux b
 
 ## 3. Update Magma for Linux
 Build Magma for Linux. Our Linux CUDA jobs use conda, so we need to build magma-cuda116 and push it to anaconda:
-1. Follow this [PR 997](https://github.com/pytorch/builder/pull/997) for all steps in this section
+1. Follow this [PR 1368](https://github.com/pytorch/builder/pull/1368) for all steps in this section
 2. Currently, this is mainly copy-paste in [`magma/Makefile`](magma/Makefile) if there are no major code API changes/deprecations to the CUDA version. Previously, we've needed to add patches to MAGMA, so this may be something to check with NVIDIA about.
 3. To push the package, please update build-magma-linux workflow [PR 897](https://github.com/pytorch/builder/pull/897).
 4. NOTE: This step relies on the conda-builder image (changes to `.github/workflows/build-conda-images.yml`), so make sure you have pushed the new conda-builder prior. Validate this step by logging into anaconda.org and seeing your package deployed for example [here](https://anaconda.org/pytorch/magma-cuda115)
@@ -116,4 +117,12 @@ propagate the CI changes so that torchvision and torchaudio can be packaged for 
 4. Almost every change in the above sample is copy-pasted from either itself or other existing parts of code in the
 builder repo. The difficulty again is not changing the config but rather verifying and debugging any failing builds.
 
-Congrats! PyTorch now has support for a new CUDA version and you made it happen!
+This completes CUDA and CUDNN upgrade. Congrats! PyTorch now has support for a new CUDA version and you made it happen!
+
+## Upgrade CUDNN version only
+
+If you require to update CUDNN version for already existing CUDA version, please perform the followin modifications.
+1. Builder PR: https://github.com/pytorch/builder/pull/1271
+2. Add new cudnn vesion to windows AMI: https://github.com/pytorch/test-infra/pull/1523. Rebuild and retest the AMI. Follow step 6  Generate new Windows AMI, test and deploy to canary and prod.
+3. Create PyTorch PR: https://github.com/pytorch/pytorch/pull/93086 and small wheel update PyTorch PR: https://github.com/pytorch/pytorch/pull/104757
+

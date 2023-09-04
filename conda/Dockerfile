@@ -1,7 +1,7 @@
-ARG ROCM_VERSION=5.2
+ARG ROCM_VERSION=5.7
 ARG BASE_CUDA_VERSION=10.2
 ARG BASE_TARGET=cuda${BASE_CUDA_VERSION}
-ARG GPU_IMAGE=nvidia/cuda:${BASE_CUDA_VERSION}-devel-centos7
+ARG GPU_IMAGE=centos:7
 FROM ${GPU_IMAGE} as base
 
 ENV LC_ALL en_US.UTF-8
@@ -10,6 +10,8 @@ ENV LANGUAGE en_US.UTF-8
 
 ARG DEVTOOLSET_VERSION=9
 RUN yum install -y wget curl perl util-linux xz bzip2 git patch which unzip
+# Just add everything as a safe.directory for git since these will be used in multiple places with git
+RUN git config --global --add safe.directory '*'
 RUN yum install -y yum-utils centos-release-scl
 RUN yum-config-manager --enable rhel-server-rhscl-7-rpms
 RUN yum install -y devtoolset-${DEVTOOLSET_VERSION}-gcc devtoolset-${DEVTOOLSET_VERSION}-gcc-c++ devtoolset-${DEVTOOLSET_VERSION}-gcc-gfortran devtoolset-${DEVTOOLSET_VERSION}-binutils
@@ -48,19 +50,17 @@ RUN rm -rf /usr/local/cuda-*
 # Install CUDA
 FROM cpu_base as cuda
 ENV CUDA_HOME=/usr/local/cuda-${CUDA_VERSION}
+# Preserve CUDA_VERSION for the builds
+ENV CUDA_VERSION=${CUDA_VERSION}
 # Make things in our path by default
 ENV PATH=/usr/local/cuda-${CUDA_VERSION}/bin:$PATH
 ADD ./common/install_cuda.sh install_cuda.sh
 
-FROM cuda as cuda11.7_base
-RUN bash ./install_cuda.sh 11.7
-ENV DESIRED_CUDA=11.7
-
-FROM cuda as cuda11.8_base
+FROM cuda as cuda11.8
 RUN bash ./install_cuda.sh 11.8
 ENV DESIRED_CUDA=11.8
 
-FROM cuda as cuda12.1_base
+FROM cuda as cuda12.1
 RUN bash ./install_cuda.sh 12.1
 ENV DESIRE_CUDA=12.1
 
@@ -70,7 +70,6 @@ ADD ./common/install_mnist.sh install_mnist.sh
 RUN bash ./install_mnist.sh
 
 FROM cpu_base as all_cuda_base
-COPY --from=cuda11.7  /usr/local/cuda-11.7 /usr/local/cuda-11.7
 COPY --from=cuda11.8  /usr/local/cuda-11.8 /usr/local/cuda-11.8
 COPY --from=cuda12.1  /usr/local/cuda-12.1 /usr/local/cuda-12.1
 
@@ -93,9 +92,6 @@ RUN yum install -y cmake3 && \
 
 
 FROM ${BASE_TARGET} as final
-# Install LLVM
-COPY --from=pytorch/llvm:9.0.1 /opt/llvm              /opt/llvm
-COPY --from=pytorch/llvm:9.0.1 /opt/llvm_no_cxx11_abi /opt/llvm_no_cxx11_abi
 COPY --from=openssl            /opt/openssl           /opt/openssl
 COPY --from=patchelf           /patchelf              /usr/local/bin/patchelf
 COPY --from=conda              /opt/conda             /opt/conda
