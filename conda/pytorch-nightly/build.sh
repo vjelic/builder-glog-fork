@@ -83,6 +83,8 @@ if [[ -n "$build_with_cuda" ]]; then
     # export USE_CUDA_STATIC_LINK=1 # links libcaffe2_gpu.so with static CUDA libs. Likely both these flags can be de-duplicated
 fi
 if [[ -n "$build_with_rocm" ]]; then
+    export USE_LLVM="$PREFIX/llvm"
+    export LLVM_DIR="$USE_LLVM/lib/cmake/llvm"
     export ROCM_PATH=$PREFIX
     export ROCM_SOURCE_DIR=$PREFIX
     export USE_ROCM=1
