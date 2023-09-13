@@ -158,6 +158,8 @@ ARG ROCM_VERSION=3.7
 ARG PYTORCH_ROCM_ARCH
 ARG PYTORCH_BRANCH
 ENV PYTORCH_ROCM_ARCH ${PYTORCH_ROCM_ARCH}
+# Adding ROCM_PATH env var so that cmake find HIP works
+ENV ROCM_PATH /opt/rocm
 # Install ROCm
 ADD ./common/install_rocm.sh install_rocm.sh
 RUN ROCM_VERSION=${ROCM_VERSION} bash ./install_rocm.sh && rm install_rocm.sh
