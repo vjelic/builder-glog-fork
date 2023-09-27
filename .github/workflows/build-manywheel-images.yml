@@ -58,7 +58,7 @@ jobs:
     runs-on: linux.12xlarge
     strategy:
       matrix:
-        rocm_version: ["5.5", "5.6"]
+        rocm_version: ["5.6", "5.7"]
     env:
       GPU_ARCH_TYPE: rocm
       GPU_ARCH_VERSION: ${{ matrix.rocm_version }}
@@ -87,7 +87,7 @@ jobs:
         run: |
           manywheel/build_docker.sh
   build-docker-cpu-aarch64:
-    runs-on: linux.t4g.2xlarge
+    runs-on: linux.arm64.2xlarge
     env:
       GPU_ARCH_TYPE: cpu-aarch64
     steps:
