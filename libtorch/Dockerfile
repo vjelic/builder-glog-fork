@@ -44,7 +44,6 @@ ENV CUDA_HOME /usr/local/cuda
 FROM base as conda
 ADD ./common/install_conda.sh install_conda.sh
 RUN bash ./install_conda.sh && rm install_conda.sh
-RUN /opt/conda/bin/conda install -y cmake=3.18
 
 FROM cuda as cuda11.8
 RUN bash ./install_cuda.sh 11.8
@@ -60,6 +59,10 @@ FROM cpu as rocm
 ARG PYTORCH_ROCM_ARCH
 ENV PYTORCH_ROCM_ARCH ${PYTORCH_ROCM_ARCH}
 ENV MKLROOT /opt/intel
+# Adding ROCM_PATH env var so that LoadHip.cmake (even with logic updated for ROCm6.0) 
+# find HIP works for ROCm5.7. Not needed for ROCm6.0 and above.
+# Remove below when ROCm5.7 is not in support matrix anymore.
+ENV ROCM_PATH /opt/rocm
 # No need to install ROCm as base docker image should have full ROCm install
 #ADD ./common/install_rocm.sh install_rocm.sh
 ADD ./common/install_rocm_drm.sh install_rocm_drm.sh
