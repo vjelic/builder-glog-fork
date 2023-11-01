@@ -9,13 +9,24 @@ set -ex
 # TODO (2)
 MKLROOT=${MKLROOT:-/opt/intel}
 
+ver() {
+  printf "%3d%03d%03d%03d" $(echo "$1" | tr '.' ' ');
+}
+
 # "install" hipMAGMA into /opt/rocm/magma by copying after build
-git clone https://bitbucket.org/icl/magma.git
-pushd magma
 if [[ $PYTORCH_BRANCH == "release/1.10.1" ]]; then
-  git checkout magma_ctrl_launch_bounds
+  if [[ $(ver $ROCM_VERSION) -ge $(ver 6.0) ]]; then
+    git clone https://bitbucket.org/mpruthvi1/magma.git -b pyt1_10_rocm6.x
+    pushd magma
+  else
+    git clone https://bitbucket.org/icl/magma.git
+    pushd magma
+    git checkout magma_ctrl_launch_bounds
+  fi
 else
   # Version 2.7.2 + ROCm related updates
+  git clone https://bitbucket.org/icl/magma.git
+  pushd magma
   git checkout 823531632140d0edcb7e77c3edc0e837421471c5
 fi
 
