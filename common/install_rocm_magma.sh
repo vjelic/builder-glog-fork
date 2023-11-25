@@ -25,9 +25,10 @@ if [[ $PYTORCH_BRANCH == "release/1.10.1" ]]; then
   fi
 else
   # Version 2.7.2 + ROCm related updates
-  git clone https://bitbucket.org/icl/magma.git
+  # Moved to temp fork SWDEV-429841
+  git clone https://bitbucket.org/mpruthvi1/magma.git -b rocm60_gcn_depr
   pushd magma
-  git checkout 823531632140d0edcb7e77c3edc0e837421471c5
+  git checkout 825f861ae834407946fb748834e4e025ac7d7064
 fi
 
 cp make.inc-examples/make.inc.hip-gcc-mkl make.inc
