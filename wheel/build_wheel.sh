@@ -99,8 +99,10 @@ mkdir -p "$whl_tmp_dir"
 
 if [[ -n "$CROSS_COMPILE_ARM64" || $(uname -m) == "arm64" ]]; then
     mac_version='macosx_11_0_arm64'
+    libtorch_arch='arm64'
 else
     mac_version='macosx_10_9_x86_64'
+    libtorch_arch='x86_64'
 fi
 
 # Create a consistent wheel package name to rename the wheel to
@@ -134,26 +136,43 @@ export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"}
 SETUPTOOLS_PINNED_VERSION="=46.0.0"
 PYYAML_PINNED_VERSION="=5.3"
 EXTRA_CONDA_INSTALL_FLAGS=""
-case ${desired_python} in
+case $desired_python in
+    3.12)
+        echo "Using 3.12 deps"
+        SETUPTOOLS_PINNED_VERSION=">=68.0.0"
+        PYYAML_PINNED_VERSION=">=6.0.1"
+        NUMPY_PINNED_VERSION="==1.26.0"
+        ;;
     3.11)
+        echo "Using 3.11 deps"
         SETUPTOOLS_PINNED_VERSION=">=46.0.0"
         PYYAML_PINNED_VERSION=">=5.3"
         NUMPY_PINNED_VERSION="==1.23.5"
         ;;
     3.10)
+        echo "Using 3.10 deps"
         SETUPTOOLS_PINNED_VERSION=">=46.0.0"
         PYYAML_PINNED_VERSION=">=5.3"
         NUMPY_PINNED_VERSION="=1.21.2"
         ;;
     3.9)
+        echo "Using 3.9 deps"
         SETUPTOOLS_PINNED_VERSION=">=46.0.0"
         PYYAML_PINNED_VERSION=">=5.3"
         NUMPY_PINNED_VERSION="=1.19"
         ;;
     3.8)
-        NUMPY_PINNED_VERSION="=1.17"
+        echo "Using 3.8 deps"
+        if [[ "$(uname -m)" == "arm64" ]]; then
+          SETUPTOOLS_PINNED_VERSION=">=46.0.0"
+          PYYAML_PINNED_VERSION=">=5.3"
+          NUMPY_PINNED_VERSION="=1.19"
+        else
+          NUMPY_PINNED_VERSION="=1.17"
+        fi
         ;;
     *)
+        echo "Using default deps"
         NUMPY_PINNED_VERSION="=1.11.3"
         ;;
 esac
@@ -168,19 +187,25 @@ if [[ "$desired_python" == "3.11" ]]; then
 else
   retry conda install ${EXTRA_CONDA_INSTALL_FLAGS} -yq "numpy${NUMPY_PINNED_VERSION}" nomkl "setuptools${SETUPTOOLS_PINNED_VERSION}" "pyyaml${PYYAML_PINNED_VERSION}" typing_extensions requests
 fi
-retry conda install ${EXTRA_CONDA_INSTALL_FLAGS} -yq cmake ninja mkl-include==2022.2.1 mkl-static==2022.2.1 -c intel
+if [[ "$(uname -m)" == "arm64" ]]; then
+  retry conda install ${EXTRA_CONDA_INSTALL_FLAGS} -yq cmake ninja
+else
+  retry conda install ${EXTRA_CONDA_INSTALL_FLAGS} -yq cmake ninja mkl-include==2022.2.1 mkl-static==2022.2.1 -c intel
+fi
 retry pip install -qr "${pytorch_rootdir}/requirements.txt" || true
 
 # For USE_DISTRIBUTED=1 on macOS, need libuv and pkg-config to find libuv.
 export USE_DISTRIBUTED=1
 retry conda install ${EXTRA_CONDA_INSTALL_FLAGS} -yq libuv pkg-config
 
-if [[ -n "$CROSS_COMPILE_ARM64" ]]; then
-    export CMAKE_OSX_ARCHITECTURES=arm64
+if [[ -n "$CROSS_COMPILE_ARM64" || "$(uname -m)" == "arm64" ]]; then
+    if [[ -n "$CROSS_COMPILE_ARM64" ]]; then
+        export CMAKE_OSX_ARCHITECTURES=arm64
+    fi
     export USE_MKLDNN=OFF
     export USE_QNNPACK=OFF
     export BUILD_TEST=OFF
-else
+elif [[ "$(uname -m)" == "x86_64" ]]; then
     retry conda install ${EXTRA_CONDA_INSTALL_FLAGS} -yq llvmdev=9
     export USE_LLVM="${CONDA_PREFIX}"
 fi
@@ -252,17 +277,24 @@ else
         cp -r "$(pwd)/any_wheel/torch/lib/include" "$(pwd)/libtorch/"
     fi
     cp -r "$(pwd)/any_wheel/torch/share/cmake" "$(pwd)/libtorch/share/"
-    if [[ -x "$(pwd)/any_wheel/torch/.dylibs/libiomp5.dylib" ]]; then
-        cp -r "$(pwd)/any_wheel/torch/.dylibs/libiomp5.dylib" "$(pwd)/libtorch/lib/"
-    else
-        cp -r "$(pwd)/any_wheel/torch/lib/libiomp5.dylib" "$(pwd)/libtorch/lib/"
+    if [[ "${libtorch_arch}" == "x86_64" ]]; then
+      if [[ -x "$(pwd)/any_wheel/torch/.dylibs/libiomp5.dylib" ]]; then
+          cp -r "$(pwd)/any_wheel/torch/.dylibs/libiomp5.dylib" "$(pwd)/libtorch/lib/"
+      else
+          cp -r "$(pwd)/any_wheel/torch/lib/libiomp5.dylib" "$(pwd)/libtorch/lib/"
+      fi
     fi
     rm -rf "$(pwd)/any_wheel"
 
     echo $PYTORCH_BUILD_VERSION > libtorch/build-version
     echo "$(pushd $pytorch_rootdir && git rev-parse HEAD)" > libtorch/build-hash
 
-    zip -rq "$PYTORCH_FINAL_PACKAGE_DIR/libtorch-macos-$PYTORCH_BUILD_VERSION.zip" libtorch
-    cp "$PYTORCH_FINAL_PACKAGE_DIR/libtorch-macos-$PYTORCH_BUILD_VERSION.zip"  \
-       "$PYTORCH_FINAL_PACKAGE_DIR/libtorch-macos-latest.zip"
+    zip -rq "$PYTORCH_FINAL_PACKAGE_DIR/libtorch-macos-${libtorch_arch}-$PYTORCH_BUILD_VERSION.zip" libtorch
+    cp "$PYTORCH_FINAL_PACKAGE_DIR/libtorch-macos-${libtorch_arch}-$PYTORCH_BUILD_VERSION.zip"  \
+       "$PYTORCH_FINAL_PACKAGE_DIR/libtorch-macos-${libtorch_arch}-latest.zip"
+    if [[ "${libtorch_arch}" == "x86_64" ]]; then
+      # For backward compatibility make unarched latest to point to x86_64
+      cp "$PYTORCH_FINAL_PACKAGE_DIR/libtorch-macos-${libtorch_arch}-$PYTORCH_BUILD_VERSION.zip"  \
+         "$PYTORCH_FINAL_PACKAGE_DIR/libtorch-macos-latest.zip"
+    fi
 fi

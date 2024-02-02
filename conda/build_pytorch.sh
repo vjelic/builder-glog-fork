@@ -72,7 +72,7 @@ if [[ -n "$OVERRIDE_PACKAGE_VERSION" ]]; then
 fi
 
 # differentiate package name for cross compilation to avoid collision
-if [[ -n "$CROSS_COMPILE_ARM64" ]]; then
+if [[ -n "$CROSS_COMPILE_ARM64" || "$(uname -m)" == "arm64" ]]; then
     export PYTORCH_LLVM_PACKAGE=""
 fi
 
@@ -109,7 +109,11 @@ if [[ -z "$DESIRED_PYTHON" ]]; then
 fi
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    DEVELOPER_DIR=/Applications/Xcode_13.3.1.app/Contents/Developer
+    if [[ "$(uname -m)" == "arm64" ]]; then
+        DEVELOPER_DIR=/Applications/Xcode_14.3.1.app/Contents/Developer
+    else
+        DEVELOPER_DIR=/Applications/Xcode_13.3.1.app/Contents/Developer
+    fi
 fi
 if [[ "$gpu_arch_type" == 'cpu' ]]; then
     cpu_only=1
@@ -208,7 +212,7 @@ if [[ "$(uname)" == 'Darwin' ]]; then
     miniconda_sh="${MAC_PACKAGE_WORK_DIR}/miniconda.sh"
     rm -rf "$tmp_conda"
     rm -f "$miniconda_sh"
-    retry curl -sS https://repo.anaconda.com/miniconda/Miniconda3-py310_23.5.2-0-MacOSX-x86_64.sh -o "$miniconda_sh"
+    retry curl -sS https://repo.anaconda.com/miniconda/Miniconda3-py310_23.5.2-0-MacOSX-$(uname -m).sh -o "$miniconda_sh"
     chmod +x "$miniconda_sh" && \
         "$miniconda_sh" -b -p "$tmp_conda" && \
         rm "$miniconda_sh"
@@ -277,8 +281,8 @@ elif [[ "$gpu_arch_type" == 'cuda' ]]; then
     # TODO, simplify after anaconda fixes their cudatoolkit versioning inconsistency.
     # see: https://github.com/conda-forge/conda-forge.github.io/issues/687#issuecomment-460086164
     if [[ "$desired_cuda" == "12.1" ]]; then
-	export CONDA_CUDATOOLKIT_CONSTRAINT="    - pytorch-cuda >=12.1,<12.2 # [not osx]"
-	export MAGMA_PACKAGE="    - magma-cuda121 # [not osx and not win]"
+        export CONDA_CUDATOOLKIT_CONSTRAINT="    - pytorch-cuda >=12.1,<12.2 # [not osx]"
+        export MAGMA_PACKAGE="    - magma-cuda121 # [not osx and not win]"
     elif [[ "$desired_cuda" == "11.8" ]]; then
         export CONDA_CUDATOOLKIT_CONSTRAINT="    - pytorch-cuda >=11.8,<11.9 # [not osx]"
         export MAGMA_PACKAGE="    - magma-cuda118 # [not osx and not win]"
@@ -288,8 +292,9 @@ elif [[ "$gpu_arch_type" == 'cuda' ]]; then
     fi
     if [[ "$OSTYPE" != "msys" ]]; then
         # TODO: Remove me when Triton has a proper release channel
+        TRITON_VERSION=$(cat $pytorch_rootdir/.ci/docker/triton_version.txt)
         TRITON_SHORTHASH=$(cut -c1-10 $pytorch_rootdir/.github/ci_commit_pins/triton.txt)
-        export CONDA_TRITON_CONSTRAINT="    - torchtriton==2.1.0+${TRITON_SHORTHASH}"
+        export CONDA_TRITON_CONSTRAINT="    - torchtriton==${TRITON_VERSION}+${TRITON_SHORTHASH} # [py < 312]"
     fi
 
     build_string_suffix="cuda${CUDA_VERSION}_cudnn${CUDNN_VERSION}_${build_string_suffix}"
@@ -343,6 +348,11 @@ fi
 
 # Loop through all Python versions to build a package for each
 for py_ver in "${DESIRED_PYTHON[@]}"; do
+    # TODO: Enable TLS support for 3.12 builds (or disable it for the rest
+    if [[ "$(uname)" == 'Linux' && "${py_ver}" == '3.12' ]]; then
+      export USE_GLOO_WITH_OPENSSL=0
+    fi
+
     build_string="py${py_ver}_${build_string_suffix}"
     folder_tag="${build_string}_$(date +'%Y%m%d')"
 

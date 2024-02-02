@@ -17,6 +17,21 @@ on:
         default: false
         required: false
         type: boolean
+      version:
+        description: 'Version to validate - optional'
+        default: ""
+        required: false
+        type: string
+      release-matrix:
+        description: 'Release matrix - optional'
+        default: ""
+        required: false
+        type: string
+      use-only-dl-pytorch-org:
+        description: 'Use only download.pytorch.org when generating wheel install command'
+        default: false
+        required: false
+        type: boolean
   workflow_dispatch:
     inputs:
       channel:
@@ -38,6 +53,21 @@ on:
         default: false
         required: false
         type: boolean
+      version:
+        description: 'Version to validate - optional'
+        default: ""
+        required: false
+        type: string
+      release-matrix:
+        description: 'Release matrix - optional'
+        default: ""
+        required: false
+        type: string
+      use-only-dl-pytorch-org:
+        description: 'Use only download.pytorch.org when generating wheel install command'
+        default: false
+        required: false
+        type: boolean
 
 jobs:
   generate-macos-matrix:
@@ -46,6 +76,8 @@ jobs:
       package-type: all
       os: macos
       channel: ${{ inputs.channel }}
+      use-only-dl-pytorch-org: ${{ inputs.use-only-dl-pytorch-org }}
+
   macos:
     needs: generate-macos-matrix
     strategy:
@@ -64,4 +96,6 @@ jobs:
         export ENV_NAME="conda-env-${{ github.run_id }}"
         export TARGET_OS="macos"
         export TORCH_ONLY=${{ inputs.torchonly }}
+        export RELEASE_VERSION=${{ inputs.version }}
+        printf '%s\n' ${{ toJson(inputs.release-matrix) }} > release_matrix.json
         source ./.github/scripts/validate_binaries.sh

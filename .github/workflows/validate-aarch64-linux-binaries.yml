@@ -17,6 +17,21 @@ on:
         default: false
         required: false
         type: boolean
+      version:
+        description: 'Version to validate - optional'
+        default: ""
+        required: false
+        type: string
+      release-matrix:
+        description: 'Release matrix - optional'
+        default: ""
+        required: false
+        type: string
+      use-only-dl-pytorch-org:
+        description: 'Use only download.pytorch.org when generating wheel install command'
+        default: false
+        required: false
+        type: boolean
   workflow_dispatch:
     inputs:
       channel:
@@ -38,6 +53,21 @@ on:
         default: false
         required: false
         type: boolean
+      version:
+        description: 'Version to validate - optional'
+        default: ""
+        required: false
+        type: string
+      release-matrix:
+        description: 'Release matrix - optional'
+        default: ""
+        required: false
+        type: string
+      use-only-dl-pytorch-org:
+        description: 'Use only download.pytorch.org when generating wheel install command'
+        default: false
+        required: false
+        type: boolean
 
 jobs:
   generate-aarch64-linux-matrix:
@@ -47,6 +77,7 @@ jobs:
       os: linux-aarch64
       channel: ${{ inputs.channel }}
       with-cuda: disable
+      use-only-dl-pytorch-org: ${{ inputs.use-only-dl-pytorch-org }}
 
   linux-aarch64:
     needs: generate-aarch64-linux-matrix
@@ -72,7 +103,15 @@ jobs:
         export ENV_NAME="conda-env-${{ github.run_id }}"
         export TARGET_OS="linux-aarch64"
         export TORCH_ONLY=${{ inputs.torchonly }}
+        export RELEASE_VERSION=${{ inputs.version }}
+        printf '%s\n' ${{ toJson(inputs.release-matrix) }} > release_matrix.json
         eval "$(conda shell.bash hook)"
 
-        # Standart case: Validate binaries
+        # NB: The latest conda 23.11.0 pulls in some dependencies of conda-libmamba-solver that
+        # require GLIBC_2.25, which is not available in the current aarch64 image causing the
+        # subsequence git command to fail. Basically, they don't work with CentOS 7 which AML 2
+        # is based on https://github.com/ContinuumIO/anaconda-issues/issues/12822
+        unset LD_LIBRARY_PATH
+
+        # Standard case: Validate binaries
         source ./.github/scripts/validate_binaries.sh

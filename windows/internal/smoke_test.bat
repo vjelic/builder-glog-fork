@@ -30,6 +30,7 @@ exit /b 1
 echo "install wheel package"
 
 set PYTHON_INSTALLER_URL=
+if "%DESIRED_PYTHON%" == "3.12" set "PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.12.0/python-3.12.0-amd64.exe"
 if "%DESIRED_PYTHON%" == "3.11" set "PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.11.0/python-3.11.0-amd64.exe"
 if "%DESIRED_PYTHON%" == "3.10" set "PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.10.0/python-3.10.0-amd64.exe"
 if "%DESIRED_PYTHON%" == "3.9" set "PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.9.0/python-3.9.0-amd64.exe"
@@ -53,7 +54,7 @@ if errorlevel 1 exit /b 1
 
 set "PATH=%CD%\Python%PYTHON_VERSION%\Scripts;%CD%\Python;%PATH%"
 
-pip install -q numpy protobuf "mkl>=2019"
+pip install -q numpy protobuf
 if errorlevel 1 exit /b 1
 
 for /F "delims=" %%i in ('where /R "%PYTORCH_FINAL_PACKAGE_DIR:/=\%" *.whl') do pip install "%%i"
@@ -86,14 +87,19 @@ set "PATH=%CONDA_HOME%;%CONDA_HOME%\scripts;%CONDA_HOME%\Library\bin;%PATH%"
 
 conda create -qyn testenv python=%DESIRED_PYTHON%
 if errorlevel 1 exit /b 1
-
+call conda install -yq conda-build
+if errorlevel 1 exit /b 1
 call %CONDA_HOME%\condabin\activate.bat testenv
 if errorlevel 1 exit /b 1
-
-:: do conda install to make sure all the dependencies are installed
-:: Install numpy see: https://github.com/pytorch/pytorch/issues/107228
-:: todo: Remove numpy install once the issue above is resolved
-call conda install -yq numpy pytorch %CONDA_EXTRA_ARGS%
+set "NO_ARCH_PATH=%PYTORCH_FINAL_PACKAGE_DIR:/=\%\noarch"
+mkdir %NO_ARCH_PATH%
+for /F "delims=" %%i in ('where /R "%PYTORCH_FINAL_PACKAGE_DIR:/=\%" *') do xcopy "%%i" %NO_ARCH_PATH% /Y
+if ERRORLEVEL 1 exit /b 1
+call conda index %PYTORCH_FINAL_PACKAGE_DIR%
+if errorlevel 1 exit /b 1
+call conda install -yq -c "file:///%PYTORCH_FINAL_PACKAGE_DIR%" pytorch==%PYTORCH_BUILD_VERSION% -c pytorch -c numba/label/dev -c nvidia
+if ERRORLEVEL 1 exit /b 1
+call conda install -yq numpy
 if ERRORLEVEL 1 exit /b 1
 
 set /a CUDA_VER=%CUDA_VERSION%
@@ -102,8 +108,7 @@ set CUDA_VER_MINOR=%CUDA_VERSION:~-1,1%
 set CUDA_VERSION_STR=%CUDA_VER_MAJOR%.%CUDA_VER_MINOR%
 
 :: Install package we just build
-for /F "delims=" %%i in ('where /R "%PYTORCH_FINAL_PACKAGE_DIR:/=\%" *.tar.bz2') do call conda install -yq "%%i" --offline
-if ERRORLEVEL 1 exit /b 1
+
 
 :smoke_test
 python -c "import torch"

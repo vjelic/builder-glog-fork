@@ -17,6 +17,26 @@ on:
         default: false
         required: false
         type: boolean
+      version:
+        description: 'Version to validate - optional'
+        default: ""
+        required: false
+        type: string
+      release-matrix:
+        description: 'Release matrix - optional'
+        default: ""
+        required: false
+        type: string
+      include-test-ops:
+        description: 'Include Test Ops tests (only Linux)'
+        default: false
+        required: false
+        type: boolean
+      use-only-dl-pytorch-org:
+        description: 'Use only download.pytorch.org when generating wheel install command'
+        default: false
+        required: false
+        type: boolean
   workflow_dispatch:
     inputs:
       channel:
@@ -38,6 +58,26 @@ on:
         default: false
         required: false
         type: boolean
+      version:
+        description: 'Version to validate - optional'
+        default: ""
+        required: false
+        type: string
+      release-matrix:
+        description: 'Release matrix - optional'
+        default: ""
+        required: false
+        type: string
+      include-test-ops:
+        description: 'Include Test Ops tests (only Linux)'
+        default: false
+        required: false
+        type: boolean
+      use-only-dl-pytorch-org:
+        description: 'Use only download.pytorch.org when generating wheel install command'
+        default: false
+        required: false
+        type: boolean
 
 jobs:
   generate-linux-matrix:
@@ -46,6 +86,7 @@ jobs:
       package-type: all
       os: linux
       channel: ${{ inputs.channel }}
+      use-only-dl-pytorch-org: ${{ inputs.use-only-dl-pytorch-org }}
 
   linux:
     needs: generate-linux-matrix
@@ -60,19 +101,24 @@ jobs:
       ref: ${{ inputs.ref || github.ref }}
       job-name: ${{ matrix.build_name }}
       binary-matrix: ${{ toJSON(matrix) }}
+      timeout: 180
       script: |
         set -ex
         export ENV_NAME="conda-env-${{ github.run_id }}"
         export TORCH_ONLY=${{ inputs.torchonly }}
+        export INCLUDE_TEST_OPS=${{ inputs.include-test-ops }}
+        export USE_ONLY_DL_PYTORCH_ORG=${{ inputs.use-only-dl-pytorch-org }}
+        export RELEASE_VERSION=${{ inputs.version }}
         export TARGET_OS="linux"
         eval "$(conda shell.bash hook)"
+        printf '%s\n' ${{ toJson(inputs.release-matrix) }} > release_matrix.json
 
         # Special case PyPi installation package. And Install of PyPi package via poetry
-        if [[ ${MATRIX_PACKAGE_TYPE} == "manywheel" ]] && \
-           ([[ ${MATRIX_GPU_ARCH_VERSION} == "12.1" && ${MATRIX_CHANNEL} != "release" ]] || \
-            [[ ${MATRIX_GPU_ARCH_VERSION} == "11.7" && ${MATRIX_CHANNEL} == "release" ]]); then
+        if [[ ${MATRIX_PACKAGE_TYPE} == "manywheel" && \
+              ${MATRIX_GPU_ARCH_VERSION} == "12.1" && \
+              ${MATRIX_CHANNEL} == "release" && \
+              ${USE_ONLY_DL_PYTORCH_ORG} == "false" ]]; then
           source ./.github/scripts/validate_pipy.sh
-          # temporary disable poetry check
           source ./.github/scripts/validate_poetry.sh
         fi
 

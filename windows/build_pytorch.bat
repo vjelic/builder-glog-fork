@@ -44,7 +44,7 @@ set "tmp_conda=%CONDA_HOME%"
 set "miniconda_exe=%CD%\miniconda.exe"
 rmdir /s /q conda
 del miniconda.exe
-curl --retry 3 -k https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe -o "%miniconda_exe%"
+curl --retry 3 -k https://repo.anaconda.com/miniconda/Miniconda3-py311_23.9.0-0-Windows-x86_64.exe -o "%miniconda_exe%"
 call ..\conda\install_conda.bat
 if ERRORLEVEL 1 exit /b 1
 set "ORIG_PATH=%PATH%"
@@ -67,15 +67,9 @@ exit /B 1
 :: Install MKL
 rmdir /s /q mkl
 del mkl_2020.2.254.7z
-curl https://s3.amazonaws.com/ossci-windows/mkl_2020.2.254.7z -k -O
-7z x -aoa mkl_2020.2.254.7z -omkl
-set CMAKE_INCLUDE_PATH=%cd%\mkl\include
-set LIB=%cd%\mkl\lib;%LIB%
 
 :: Download MAGMA Files on CUDA builds
 set MAGMA_VERSION=2.5.4
-if "%CUDA_VERSION%" == "92" set MAGMA_VERSION=2.5.2
-if "%CUDA_VERSION%" == "100" set MAGMA_VERSION=2.5.2
 
 if "%DEBUG%" == "1" (
     set BUILD_TYPE=debug
@@ -128,7 +122,7 @@ for %%v in (%DESIRED_PYTHON_PREFIX%) do (
     ) else (
         set "PATH=%CONDA_HOME%\envs\%%v;%CONDA_HOME%\envs\%%v\scripts;%CONDA_HOME%\envs\%%v\Library\bin;%ORIG_PATH%"
     )
-    pip install ninja
+    pip install ninja mkl-include==2021.4.0 mkl-devel==2021.4.0
     @setlocal
     :: Set Flags
     if not "%CUDA_VERSION%"=="cpu" (

@@ -15,13 +15,13 @@ case ${GPU_ARCH_TYPE} in
     cpu)
         BASE_TARGET=cpu
         DOCKER_TAG=cpu
-        GPU_IMAGE=ubuntu:18.04
+        GPU_IMAGE=ubuntu:20.04
         DOCKER_GPU_BUILD_ARG=""
         ;;
     cuda)
         BASE_TARGET=cuda${GPU_ARCH_VERSION}
         DOCKER_TAG=cuda${GPU_ARCH_VERSION}
-        GPU_IMAGE=ubuntu:18.04
+        GPU_IMAGE=ubuntu:20.04
         DOCKER_GPU_BUILD_ARG=""
         ;;
     rocm)
@@ -35,6 +35,9 @@ case ${GPU_ARCH_TYPE} in
         else
             echo "ERROR: rocm regex failed"
             exit 1
+        fi
+        if [[ $ROCM_VERSION_INT -ge 60000 ]]; then
+            PYTORCH_ROCM_ARCH+=";gfx942"
         fi
         DOCKER_GPU_BUILD_ARG="--build-arg PYTORCH_ROCM_ARCH=${PYTORCH_ROCM_ARCH}"
         ;;

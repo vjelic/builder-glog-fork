@@ -6,8 +6,9 @@ set -eux -o pipefail
 
 CONDA_PYTHON_EXE=/opt/conda/bin/python
 CONDA_EXE=/opt/conda/bin/conda
+CONDA_ENV_NAME=aarch64_env
 PATH=/opt/conda/bin:$PATH
-LD_LIBRARY_PATH=/opt/conda/lib:$LD_LIBRARY_PATH
+LD_LIBRARY_PATH=/opt/conda/envs/${CONDA_ENV_NAME}/lib/:/opt/conda/lib:$LD_LIBRARY_PATH
 
 ###############################################################################
 # Install conda
@@ -19,7 +20,17 @@ curl -L -o /mambaforge.sh https://github.com/conda-forge/miniforge/releases/late
 chmod +x /mambaforge.sh
 /mambaforge.sh -b -p /opt/conda
 rm /mambaforge.sh
-/opt/conda/bin/conda config --set ssl_verify False
-/opt/conda/bin/conda install -y -c conda-forge python=${DESIRED_PYTHON} numpy pyyaml setuptools patchelf pygit2 openblas ninja scons
+source /opt/conda/etc/profile.d/conda.sh
+conda config --set ssl_verify False
+conda create -y -c conda-forge -n "${CONDA_ENV_NAME}" python=${DESIRED_PYTHON}
+conda activate "${CONDA_ENV_NAME}"
+
+if [[ "$DESIRED_PYTHON"  == "3.8" ]]; then
+    NUMPY_VERSION="1.24.4"
+else
+    NUMPY_VERSION="1.26.2"
+fi
+conda install -y -c conda-forge numpy==${NUMPY_VERSION} pyyaml==6.0.1 patchelf==0.17.2 pygit2==1.13.2 openblas==0.3.25 ninja==1.11.1 scons==4.5.2
+
 python --version
 conda --version

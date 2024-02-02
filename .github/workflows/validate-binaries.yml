@@ -27,6 +27,16 @@ on:
         default: false
         required: false
         type: boolean
+      include-test-ops:
+        description: 'Include Test Ops tests (only Linux)'
+        default: false
+        required: false
+        type: boolean
+      use-only-dl-pytorch-org:
+        description: 'Use only download.pytorch.org when generating wheel install command'
+        default: false
+        required: false
+        type: boolean
   workflow_dispatch:
     inputs:
       os:
@@ -60,44 +70,86 @@ on:
         default: false
         required: false
         type: boolean
+      version:
+        description: 'Version to validate'
+        default: ""
+        required: false
+        type: string
+      include-test-ops:
+        description: 'Include Test Ops tests (only Linux)'
+        default: false
+        required: false
+        type: boolean
+      use-only-dl-pytorch-org:
+        description: 'Use only download.pytorch.org when generating wheel install command'
+        default: false
+        required: false
+        type: boolean
+
 
 jobs:
+  generate-release-matrix:
+    uses: pytorch/test-infra/.github/workflows/generate_release_matrix.yml@main
+    with:
+      version: ${{ inputs.version }}
+
   win:
     if:  inputs.os == 'windows' || inputs.os == 'all'
+    needs: generate-release-matrix
     uses: ./.github/workflows/validate-windows-binaries.yml
     with:
       channel: ${{ inputs.channel }}
       ref: ${{ inputs.ref || github.ref }}
       torchonly: ${{ inputs.torchonly }}
+      version: ${{ inputs.version }}
+      release-matrix: ${{ needs.generate-release-matrix.outputs.matrix }}
+      use-only-dl-pytorch-org: ${{ inputs.use-only-dl-pytorch-org }}
 
   linux:
     if:  inputs.os == 'linux' || inputs.os == 'all'
+    needs: generate-release-matrix
     uses: ./.github/workflows/validate-linux-binaries.yml
     with:
       channel: ${{ inputs.channel }}
       ref: ${{ inputs.ref || github.ref }}
       torchonly: ${{ inputs.torchonly }}
+      version: ${{ inputs.version }}
+      release-matrix: ${{ needs.generate-release-matrix.outputs.matrix }}
+      include-test-ops: ${{ inputs.include-test-ops }}
+      use-only-dl-pytorch-org: ${{ inputs.use-only-dl-pytorch-org }}
 
   linux-aarch64:
-    if:  inputs.os == 'linux-aarch64'
+    if:  inputs.os == 'linux-aarch64' || inputs.os == 'all'
+    needs: generate-release-matrix
     uses: ./.github/workflows/validate-aarch64-linux-binaries.yml
     with:
       channel: ${{ inputs.channel }}
       ref: ${{ inputs.ref || github.ref }}
       torchonly: ${{ inputs.torchonly }}
+      version: ${{ inputs.version }}
+      release-matrix: ${{ needs.generate-release-matrix.outputs.matrix }}
+      use-only-dl-pytorch-org: ${{ inputs.use-only-dl-pytorch-org }}
 
   mac:
     if:  inputs.os == 'macos' || inputs.os == 'all'
+    needs: generate-release-matrix
     uses: ./.github/workflows/validate-macos-binaries.yml
     with:
       channel: ${{ inputs.channel }}
       ref: ${{ inputs.ref || github.ref }}
       torchonly: ${{ inputs.torchonly }}
+      version: ${{ inputs.version }}
+      release-matrix: ${{ needs.generate-release-matrix.outputs.matrix }}
+      use-only-dl-pytorch-org: ${{ inputs.use-only-dl-pytorch-org }}
 
   mac-arm64:
     if:  inputs.os == 'macos' || inputs.os == 'all'
+    needs: generate-release-matrix
     uses: ./.github/workflows/validate-macos-arm64-binaries.yml
     with:
       channel: ${{ inputs.channel }}
       ref: ${{ inputs.ref || github.ref }}
       torchonly: ${{ inputs.torchonly }}
+      version: ${{ inputs.version }}
+      release-matrix: ${{ needs.generate-release-matrix.outputs.matrix }}
+      use-only-dl-pytorch-org: ${{ inputs.use-only-dl-pytorch-org }}
