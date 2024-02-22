@@ -8,20 +8,24 @@ poetry --version
 poetry new test_poetry
 cd test_poetry
 
-if [[ ${MATRIX_CHANNEL} != "release" ]]; then
-    # Installing poetry from our custom repo. We need to configure it before use and disable authentication
-    export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring
-    poetry source add --priority=explicit domains "https://download.pytorch.org/whl/${MATRIX_CHANNEL}/${MATRIX_DESIRED_CUDA}"
-    poetry source add --priority=supplemental pytorch-nightly "https://download.pytorch.org/whl/${MATRIX_CHANNEL}"
-    poetry source add --priority=supplemental pytorch "https://download.pytorch.org/whl/${MATRIX_CHANNEL}/${MATRIX_DESIRED_CUDA}_pypi_cudnn"
-    poetry --quiet add --source pytorch torch
-    poetry --quiet add --source domains torchvision torchaudio
-else
-    export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring
-    poetry --quiet add torch torchaudio torchvision
+TEST_SUFFIX=""
+if [[ ${TORCH_ONLY} == 'true' ]]; then
+    TEST_SUFFIX=" --package torchonly"
 fi
 
-python ../test/smoke_test/smoke_test.py
+RELEASE_SUFFIX=""
+# if RELESE version is passed as parameter - install speific version
+if [[ ! -z ${RELEASE_VERSION} ]]; then
+    RELEASE_SUFFIX="@${RELEASE_VERSION}"
+fi
+
+if [[ ${TORCH_ONLY} == 'true' ]]; then
+    poetry --quiet add torch${RELEASE_SUFFIX}
+else
+    poetry --quiet add torch${RELEASE_SUFFIX} torchaudio torchvision
+fi
+
+python ../test/smoke_test/smoke_test.py ${TEST_SUFFIX} --runtime-error-check disabled
 conda deactivate
 conda env remove -p ${ENV_NAME}_poetry
 cd ..

@@ -67,7 +67,7 @@ if [[ -n "$OVERRIDE_PACKAGE_VERSION" ]]; then
 fi
 
 # differentiate package name for cross compilation to avoid collision
-if [[ -n "$CROSS_COMPILE_ARM64" ]]; then
+if [[ -n "$CROSS_COMPILE_ARM64" || "$(uname -m)" == "arm64" ]]; then
     export PYTORCH_LLVM_PACKAGE=""
 fi
 
@@ -98,15 +98,17 @@ if [[ -z "$EXTRA_CAFFE2_CMAKE_FLAGS" ]]; then
     # These are passed to tools/build_pytorch_libs.sh::build_caffe2()
     EXTRA_CAFFE2_CMAKE_FLAGS=()
 fi
+
 if [[ -z "$DESIRED_PYTHON" ]]; then
-    if [[ "$OSTYPE" == "msys" ]]; then
-        DESIRED_PYTHON=('3.5' '3.6' '3.7')
-    else
-        DESIRED_PYTHON=('2.7' '3.5' '3.6' '3.7' '3.8')
-    fi
+    DESIRED_PYTHON=('3.8')
 fi
+
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    DEVELOPER_DIR=/Applications/Xcode_13.3.1.app/Contents/Developer
+    if [[ "$(uname -m)" == "arm64" ]]; then
+        DEVELOPER_DIR=/Applications/Xcode_14.3.1.app/Contents/Developer
+    else
+        DEVELOPER_DIR=/Applications/Xcode_13.3.1.app/Contents/Developer
+    fi
 fi
 if [[ "$desired_cuda" == 'cpu' ]]; then
     cpu_only=1
@@ -201,12 +203,13 @@ if [[ "$(uname)" == 'Darwin' ]]; then
     miniconda_sh="${MAC_PACKAGE_WORK_DIR}/miniconda.sh"
     rm -rf "$tmp_conda"
     rm -f "$miniconda_sh"
-    retry curl -sS https://repo.anaconda.com/miniconda/Miniconda3-py310_23.5.2-0-MacOSX-x86_64.sh -o "$miniconda_sh"
+    retry curl -sS https://repo.anaconda.com/miniconda/Miniconda3-py310_23.5.2-0-MacOSX-$(uname -m).sh -o "$miniconda_sh"
     chmod +x "$miniconda_sh" && \
         "$miniconda_sh" -b -p "$tmp_conda" && \
         rm "$miniconda_sh"
     export PATH="$tmp_conda/bin:$PATH"
-    retry conda install -yq conda-build
+    # TODO(huydhn): We can revert the pin after https://github.com/conda/conda-build/issues/5167 is resolved
+    retry conda install -yq conda-build=3.28.4
 elif [[ "$OSTYPE" == "msys" ]]; then
     export tmp_conda="${WIN_PACKAGE_WORK_DIR}\\conda"
     export miniconda_exe="${WIN_PACKAGE_WORK_DIR}\\miniconda.exe"
@@ -266,8 +269,8 @@ else
     # TODO, simplify after anaconda fixes their cudatoolkit versioning inconsistency.
     # see: https://github.com/conda-forge/conda-forge.github.io/issues/687#issuecomment-460086164
     if [[ "$desired_cuda" == "12.1" ]]; then
-	export CONDA_CUDATOOLKIT_CONSTRAINT="    - pytorch-cuda >=12.1,<12.2 # [not osx]"
-	export MAGMA_PACKAGE="    - magma-cuda121 # [not osx and not win]"
+        export CONDA_CUDATOOLKIT_CONSTRAINT="    - pytorch-cuda >=12.1,<12.2 # [not osx]"
+        export MAGMA_PACKAGE="    - magma-cuda121 # [not osx and not win]"
     elif [[ "$desired_cuda" == "11.8" ]]; then
         export CONDA_CUDATOOLKIT_CONSTRAINT="    - pytorch-cuda >=11.8,<11.9 # [not osx]"
         export MAGMA_PACKAGE="    - magma-cuda118 # [not osx and not win]"
@@ -277,8 +280,9 @@ else
     fi
     if [[ "$OSTYPE" != "msys" ]]; then
         # TODO: Remove me when Triton has a proper release channel
+        TRITON_VERSION=$(cat $pytorch_rootdir/.ci/docker/triton_version.txt)
         TRITON_SHORTHASH=$(cut -c1-10 $pytorch_rootdir/.github/ci_commit_pins/triton.txt)
-        export CONDA_TRITON_CONSTRAINT="    - torchtriton==2.1.0+${TRITON_SHORTHASH}"
+        export CONDA_TRITON_CONSTRAINT="    - torchtriton==${TRITON_VERSION}+${TRITON_SHORTHASH} # [py < 312]"
     fi
 
     build_string_suffix="cuda${CUDA_VERSION}_cudnn${CUDNN_VERSION}_${build_string_suffix}"
@@ -286,9 +290,7 @@ fi
 
 # Some tricks for sccache with conda builds on Windows
 if [[ "$OSTYPE" == "msys" && "$USE_SCCACHE" == "1" ]]; then
-    if [[ ! -d "/c/cb" ]]; then
-        rm -rf /c/cb
-    fi
+    rm -rf /c/cb
     mkdir -p /c/cb/pytorch_1000000000000
     export CONDA_BLD_PATH="C:\\cb"
     export CONDA_BUILD_EXTRA_ARGS="--dirty"
@@ -307,6 +309,11 @@ fi
 
 # Loop through all Python versions to build a package for each
 for py_ver in "${DESIRED_PYTHON[@]}"; do
+    # TODO: Enable TLS support for 3.12 builds (or disable it for the rest
+    if [[ "$(uname)" == 'Linux' && "${py_ver}" == '3.12' ]]; then
+      export USE_GLOO_WITH_OPENSSL=0
+    fi
+
     build_string="py${py_ver}_${build_string_suffix}"
     folder_tag="${build_string}_$(date +'%Y%m%d')"
 
@@ -337,14 +344,14 @@ for py_ver in "${DESIRED_PYTHON[@]}"; do
     # Build the package
     echo "Build $build_folder for Python version $py_ver"
     conda config --set anaconda_upload no
-    conda install -y conda-package-handling conda==22.9.0
 
     if [[ "$OSTYPE" == "msys" ]]; then
       # Don't run tests on windows (they were ignored mostly anyways)
       NO_TEST="--no-test"
+      # Fow windows need to keep older conda version
+      conda install -y conda-package-handling conda==22.9.0
     else
-      # NS: To be removed after conda docker images are updated
-      conda update -y conda-build
+      conda install -y conda-package-handling conda==23.5.2
     fi
 
     echo "Calling conda-build at $(date)"
@@ -417,7 +424,12 @@ done
 
 # Cleanup the tricks for sccache with conda builds on Windows
 if [[ "$OSTYPE" == "msys" ]]; then
+    # Please note sometimes we get Device or resource busy during
+    # this cleanup step. We don't want to fail the build because of this
+    # hence adding +e, -e around the cleanup step
+    set +e
     rm -rf /c/cb/pytorch_1000000000000
+    set -e
     unset CONDA_BLD_PATH
 fi
 unset CONDA_BUILD_EXTRA_ARGS

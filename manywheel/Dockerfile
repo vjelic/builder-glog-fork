@@ -145,7 +145,6 @@ RUN yum install -y python3-pip && \
     ln -s /usr/local/bin/cmake /usr/bin/cmake
 
 # ninja
-RUN yum install -y http://repo.okay.com.mx/centos/7/x86_64/release/okay-release-1-5.el7.noarch.rpm
 RUN yum install -y ninja-build
 
 FROM cpu_final as cuda_final
@@ -160,6 +159,10 @@ ARG ROCM_VERSION=3.7
 ARG PYTORCH_ROCM_ARCH
 ARG PYTORCH_BRANCH
 ENV PYTORCH_ROCM_ARCH ${PYTORCH_ROCM_ARCH}
+# Adding ROCM_PATH env var so that LoadHip.cmake (even with logic updated for ROCm6.0)
+# find HIP works for ROCm5.7. Not needed for ROCm6.0 and above.
+# Remove below when ROCm5.7 is not in support matrix anymore.
+ENV ROCM_PATH /opt/rocm
 # No need to install ROCm as base docker image should have full ROCm install
 #ADD ./common/install_rocm.sh install_rocm.sh
 #RUN ROCM_VERSION=${ROCM_VERSION} bash ./install_rocm.sh && rm install_rocm.sh

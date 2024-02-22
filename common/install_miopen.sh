@@ -33,8 +33,6 @@ if [[ $ROCM_INT -lt 40001 ]]; then
     exit 0
 fi
 
-yum remove -y miopen-hip
-
 # Function to retry functions that sometimes timeout or have flaky failures
 retry () {
     $*  || (sleep 1 && $*) || (sleep 2 && $*) || (sleep 4 && $*) || (sleep 8 && $*)
@@ -58,7 +56,13 @@ MIOPEN_CMAKE_COMMON_FLAGS="
 -DMIOPEN_BUILD_DRIVER=OFF
 "
 # Pull MIOpen repo and set DMIOPEN_EMBED_DB based on ROCm version
-if [[ $ROCM_INT -ge 50600 ]] && [[ $ROCM_INT -lt 50700 ]]; then
+if [[ $ROCM_INT -ge 60000 ]] && [[ $ROCM_INT -lt 60100 ]]; then
+    echo "ROCm 6.0 MIOpen does not need any patches, do not build from source"
+    exit 0
+elif [[ $ROCM_INT -ge 50700 ]] && [[ $ROCM_INT -lt 60000 ]]; then
+    echo "ROCm 5.7 MIOpen does not need any patches, do not build from source"
+    exit 0
+elif [[ $ROCM_INT -ge 50600 ]] && [[ $ROCM_INT -lt 50700 ]]; then
     MIOPEN_BRANCH="release/rocm-rel-5.6-staging"
 elif [[ $ROCM_INT -ge 50500 ]] && [[ $ROCM_INT -lt 50600 ]]; then
     MIOPEN_BRANCH="release/rocm-rel-5.5-gfx11"
@@ -82,7 +86,9 @@ else
     exit 1
 fi
 
-git clone https://github.com/ROCmSoftwarePlatform/MIOpen -b ${MIOPEN_BRANCH}
+yum remove -y miopen-hip
+
+git clone https://github.com/ROCm/MIOpen -b ${MIOPEN_BRANCH}
 pushd MIOpen
 # remove .git to save disk space since CI runner was running out
 rm -rf .git

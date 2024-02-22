@@ -116,7 +116,7 @@ if [[ "$(uname)" != 'Darwin' ]]; then
   #
   # To check whether it is using cxx11 ABI, check non-existence of symbol:
   PRE_CXX11_SYMBOLS=(
-    "std::basic_string"
+    "std::basic_string<"
     "std::list"
   )
   # To check whether it is using pre-cxx11 ABI, check non-existence of symbol:
@@ -261,7 +261,7 @@ setup_link_flags () {
   fi
 }
 
-TEST_CODE_DIR="$(dirname ${BASH_SOURCE[0]})/test_example_code"
+TEST_CODE_DIR="$(dirname $(realpath ${BASH_SOURCE[0]}))/test_example_code"
 build_and_run_example_cpp () {
   if [[ "$DESIRED_DEVTOOLSET" == *"cxx11-abi"* ]]; then
     GLIBCXX_USE_CXX11_ABI=1
@@ -407,6 +407,18 @@ if [[ "$DESIRED_CUDA" != 'cpu' && "$DESIRED_CUDA" != 'cpu-cxx11-abi' && "$DESIRE
     popd
   fi # if libtorch
 fi # if cuda
+
+##########################
+# Run parts of smoke tests
+##########################
+if [[ "$PACKAGE_TYPE" != 'libtorch' ]]; then
+  pushd "$(dirname ${BASH_SOURCE[0]})/test/smoke_test"
+  python -c "from smoke_test import test_linalg; test_linalg()"
+  if [[ "$DESIRED_CUDA" == *cuda* ]]; then
+    python -c "from smoke_test import test_linalg; test_linalg('cuda')"
+  fi
+  popd
+fi
 
 ###############################################################################
 # Check PyTorch supports TCP_TLS gloo transport

@@ -20,6 +20,14 @@ case ${GPU_ARCH_TYPE} in
         GPU_IMAGE=centos:7
         DOCKER_GPU_BUILD_ARG=" --build-arg DEVTOOLSET_VERSION=9"
         ;;
+    cpu-aarch64)
+        TARGET=final
+        DOCKER_TAG=cpu-aarch64
+        LEGACY_DOCKER_IMAGE=${DOCKER_REGISTRY}/pytorch/manylinux-cpu-aarch64
+        GPU_IMAGE=arm64v8/centos:7
+        DOCKER_GPU_BUILD_ARG=" --build-arg DEVTOOLSET_VERSION=10"
+        MANY_LINUX_VERSION="aarch64"
+        ;;
     cpu-cxx11-abi)
         TARGET=final
         DOCKER_TAG=cpu-cxx11-abi
@@ -48,6 +56,9 @@ case ${GPU_ARCH_TYPE} in
         else
             echo "ERROR: rocm regex failed"
             exit 1
+        fi
+        if [[ $ROCM_VERSION_INT -ge 60000 ]]; then
+            PYTORCH_ROCM_ARCH+=";gfx942"
         fi
         DOCKER_GPU_BUILD_ARG="--build-arg ROCM_VERSION=${GPU_ARCH_VERSION} --build-arg PYTORCH_ROCM_ARCH=${PYTORCH_ROCM_ARCH} --build-arg DEVTOOLSET_VERSION=9"
         ;;

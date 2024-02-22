@@ -1,12 +1,20 @@
-conda create -yp ${ENV_NAME}_pypi python=${MATRIX_PYTHON_VERSION} numpy ffmpeg
+conda create -yn ${ENV_NAME}_pypi python=${MATRIX_PYTHON_VERSION} numpy ffmpeg
+conda activate ${ENV_NAME}_pypi
 
-if [[ ${MATRIX_CHANNEL} != "release" ]]; then
-    conda run -p ${ENV_NAME}_pypi pip3 install --pre torch --index-url "https://download.pytorch.org/whl/${MATRIX_CHANNEL}/${MATRIX_DESIRED_CUDA}_pypi_cudnn"
-    conda run -p ${ENV_NAME}_pypi pip3 install --pre torchvision torchaudio --index-url "https://download.pytorch.org/whl/${MATRIX_CHANNEL}/${MATRIX_DESIRED_CUDA}"
-else
-    conda run -p ${ENV_NAME}_pypi pip3 install torch torchvision torchaudio
+TEST_SUFFIX=""
+RELEASE_SUFFIX=""
+# if RELESE version is passed as parameter - install speific version
+if [[ ! -z ${RELEASE_VERSION} ]]; then
+    RELEASE_SUFFIX="==${RELEASE_VERSION}"
 fi
 
-conda run -p ${ENV_NAME}_pypi python ./test/smoke_test/smoke_test.py
+if [[ ${TORCH_ONLY} == 'true' ]]; then
+    TEST_SUFFIX=" --package torchonly"
+    pip3 install torch${RELEASE_SUFFIX}
+else
+    pip3 install torch${RELEASE_SUFFIX} torchvision torchaudio
+fi
+
+python ./test/smoke_test/smoke_test.py ${TEST_SUFFIX} --runtime-error-check disabled
 conda deactivate
 conda env remove -p ${ENV_NAME}_pypi

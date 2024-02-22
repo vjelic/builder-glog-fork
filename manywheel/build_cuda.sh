@@ -13,6 +13,7 @@ export ATEN_STATIC_CUDA=1
 export USE_CUDA_STATIC_LINK=1
 export INSTALL_TEST=0 # dont install test binaries into site-packages
 export USE_CUPTI_SO=0
+export USE_CUSPARSELT=${USE_CUSPARSELT:-1} # Enable if not disabled by libtorch build
 
 # Keep an array of cmake variables to add to
 if [[ -z "$CMAKE_ARGS" ]]; then
@@ -46,7 +47,7 @@ if [[ -n "$DESIRED_CUDA" ]]; then
     # There really has to be a better way to do this - eli
     # Possibly limiting builds to specific cuda versions be delimiting images would be a choice
     if [[ "$OS_NAME" == *"Ubuntu"* ]]; then
-        echo "Switching to CUDA version $desired_cuda"
+        echo "Switching to CUDA version ${DESIRED_CUDA}"
         /builder/conda/switch_cuda_version.sh "${DESIRED_CUDA}"
     fi
 else
@@ -112,16 +113,26 @@ elif [[ "$OS_NAME" == *"Ubuntu"* ]]; then
     LIBGOMP_PATH="/usr/lib/x86_64-linux-gnu/libgomp.so.1"
 fi
 
+DEPS_LIST=(
+    "$LIBGOMP_PATH"
+)
+DEPS_SONAME=(
+    "libgomp.so.1"
+)
+
+if [[ $USE_CUSPARSELT == "1" ]]; then
+        DEPS_SONAME+=(
+            "libcusparseLt.so.0"
+        )
+        DEPS_LIST+=(
+            "/usr/local/cuda/lib64/libcusparseLt.so.0"
+        )
+fi
+
 if [[ $CUDA_VERSION == "12.1" ]]; then
     export USE_STATIC_CUDNN=0
     # Try parallelizing nvcc as well
     export TORCH_NVCC_FLAGS="-Xfatbin -compress-all --threads 2"
-    DEPS_LIST=(
-        "$LIBGOMP_PATH"
-    )
-    DEPS_SONAME=(
-        "libgomp.so.1"
-    )
 
     if [[ -z "$PYTORCH_EXTRA_INSTALL_REQUIREMENTS" ]]; then
         echo "Bundling with cudnn and cublas."
@@ -186,12 +197,8 @@ elif [[ $CUDA_VERSION == "11.8" ]]; then
     export USE_STATIC_CUDNN=0
     # Try parallelizing nvcc as well
     export TORCH_NVCC_FLAGS="-Xfatbin -compress-all --threads 2"
-    DEPS_LIST=(
-        "$LIBGOMP_PATH"
-    )
-    DEPS_SONAME=(
-        "libgomp.so.1"
-    )
+    # Bundle ptxas into the wheel, see https://github.com/pytorch/pytorch/pull/119750
+    export BUILD_BUNDLE_PTXAS=1
 
     if [[ -z "$PYTORCH_EXTRA_INSTALL_REQUIREMENTS" ]]; then
         echo "Bundling with cudnn and cublas."
@@ -257,15 +264,20 @@ else
     exit 1
 fi
 
-# TODO: Remove me when Triton has a proper release channel
-if [[ $(uname) == "Linux" ]]; then
-    TRITON_SHORTHASH=$(cut -c1-10 $PYTORCH_ROOT/.github/ci_commit_pins/triton.txt)
 
-    if [[ -z "$PYTORCH_EXTRA_INSTALL_REQUIREMENTS" ]]; then
-        export PYTORCH_EXTRA_INSTALL_REQUIREMENTS="pytorch-triton==2.1.0+${TRITON_SHORTHASH}"
-    else
-        export PYTORCH_EXTRA_INSTALL_REQUIREMENTS="${PYTORCH_EXTRA_INSTALL_REQUIREMENTS} | pytorch-triton==2.1.0+${TRITON_SHORTHASH}"
-    fi
+TRITON_VERSION=$(cat $PYTORCH_ROOT/.ci/docker/triton_version.txt)
+# Only linux Python < 3.12 are supported wheels for triton
+TRITON_CONSTRAINT="platform_system == 'Linux' and platform_machine == 'x86_64' and python_version < '3.12'"
+TRITON_REQUIREMENT="pytorch-triton==${TRITON_VERSION}; ${TRITON_CONSTRAINT}"
+if [[ -n "$OVERRIDE_PACKAGE_VERSION" && "$OVERRIDE_PACKAGE_VERSION" =~ .*dev.* ]]; then
+    TRITON_SHORTHASH=$(cut -c1-10 $PYTORCH_ROOT/.github/ci_commit_pins/triton.txt)
+    TRITON_REQUIREMENT="pytorch-triton==${TRITON_VERSION}+${TRITON_SHORTHASH}; ${TRITON_CONSTRAINT}"
+fi
+
+if [[ -z "$PYTORCH_EXTRA_INSTALL_REQUIREMENTS" ]]; then
+    export PYTORCH_EXTRA_INSTALL_REQUIREMENTS="${TRITON_REQUIREMENT}"
+else
+    export PYTORCH_EXTRA_INSTALL_REQUIREMENTS="${PYTORCH_EXTRA_INSTALL_REQUIREMENTS} | ${TRITON_REQUIREMENT}"
 fi
 
 # builder/test.sh requires DESIRED_CUDA to know what tests to exclude
