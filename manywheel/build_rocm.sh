@@ -119,6 +119,16 @@ if [[ "$OS_NAME" == *"CentOS Linux"* ]]; then
     LIBTINFO_PATH="/usr/lib64/libtinfo.so.5"
     LIBDRM_PATH="/opt/amdgpu/lib64/libdrm.so.2"
     LIBDRM_AMDGPU_PATH="/opt/amdgpu/lib64/libdrm_amdgpu.so.1"
+    LIBSUITESPARSE_CONFIG_PATH="/usr/lib64/libsuitesparseconfig.so.4"
+    LIBROCPROFILER_REGISTER_PATH="/usr/lib64/librocprofiler-register.so.0"
+    LIBCHOLMOD_PATH="/usr/lib64/libcholmod.so.2"
+    LIBAMD_PATH="/usr/lib64/libamd.so.2"
+    LIBCAMD_PATH="/usr/lib64/libcamd.so.2"
+    LIBCCOLAMD_PATH="/usr/lib64/libccolamd.so.2"
+    LIBCOLAMD_PATH="/usr/lib64/libcolamd.so.2"
+    LIBSATLAS_PATH="/usr/lib64/libsatlas.so.3"
+    LIBGFORTRAN_PATH="/usr/lib64/libgfortran.so.3"
+    LIBQUADMATH_PATH="/usr/lib64/libquadmath.so.0"
     MAYBE_LIB64=lib64
 elif [[ "$OS_NAME" == *"Ubuntu"* ]]; then
     LIBGOMP_PATH="/usr/lib/x86_64-linux-gnu/libgomp.so.1"
@@ -131,11 +141,26 @@ elif [[ "$OS_NAME" == *"Ubuntu"* ]]; then
     fi
     LIBDRM_PATH="/usr/lib/x86_64-linux-gnu/libdrm.so.2"
     LIBDRM_AMDGPU_PATH="/usr/lib/x86_64-linux-gnu/libdrm_amdgpu.so.1"
+    LIBSUITESPARSE_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/libsuitesparseconfig.so.4"
+    LIBROCPROFILER_REGISTER_PATH="/usr/lib/x86_64-linux-gnu/librocprofiler-register.so.0"
+    LIBCHOLMOD_PATH="/usr/lib/x86_64-linux-gnu/libcholmod.so.2"
+    LIBAMD_PATH="/usr/lib/x86_64-linux-gnu/libamd.so.2"
+    LIBCAMD_PATH="/usr/lib/x86_64-linux-gnu/libcamd.so.2"
+    LIBCCOLAMD_PATH="/usr/lib/x86_64-linux-gnu/libccolamd.so.2"
+    LIBCOLAMD_PATH="/usr/lib/x86_64-linux-gnu/libcolamd.so.2"
+    LIBSATLAS_PATH="/usr/lib/x86_64-linux-gnu/libsatlas.so.3"
+    LIBGFORTRAN_PATH="/usr/lib/x86_64-linux-gnu/libgfortran.so.3"
+    LIBQUADMATH_PATH="/usr/lib/x86_64-linux-gnu/libquadmath.so.0"
     MAYBE_LIB64=lib
 fi
 OS_SO_PATHS=($LIBGOMP_PATH $LIBNUMA_PATH\
              $LIBELF_PATH $LIBTINFO_PATH\
-             $LIBDRM_PATH $LIBDRM_AMDGPU_PATH)
+             $LIBDRM_PATH $LIBDRM_AMDGPU_PATH\
+             $LIBSUITESPARSE_CONFIG_PATH $LIBROCPROFILER_REGISTER_PATH\
+             $LIBCHOLMOD_PATH $LIBAMD_PATH\
+             $LIBCAMD_PATH $LIBCCOLAMD_PATH\
+             $LIBCOLAMD_PATH $LIBSATLAS_PATH\
+             $LIBGFORTRAN_PATH $LIBQUADMATH_PATH)
 OS_SO_FILES=()
 for lib in "${OS_SO_PATHS[@]}"
 do
