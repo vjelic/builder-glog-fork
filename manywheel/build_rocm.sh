@@ -112,7 +112,7 @@ if [[ $ROCM_INT -ge 50400 ]]; then
 fi
 
 if [[ $ROCM_INT -ge 60100 ]]; then
-    ROCM_SO_FILES+=("librocprofiler-register.so.0")
+    ROCM_SO_FILES+=("librocprofiler-register.so")
 fi
 
 OS_NAME=`awk -F= '/^NAME/{print $2}' /etc/os-release`
