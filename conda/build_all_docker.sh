@@ -10,6 +10,6 @@ for CUDA_VERSION in 12.1 11.8; do
   GPU_ARCH_TYPE=cuda GPU_ARCH_VERSION="${CUDA_VERSION}" conda/build_docker.sh
 done
 
-for ROCM_VERSION in 5.7 6.0; do
+for ROCM_VERSION in 6.0 6.1; do
     GPU_ARCH_TYPE=rocm GPU_ARCH_VERSION="${ROCM_VERSION}" conda/build_docker.sh
 done
