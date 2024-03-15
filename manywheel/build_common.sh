@@ -290,6 +290,7 @@ rm -rf /tmp_dir
 mkdir /tmp_dir
 pushd /tmp_dir
 
+<<'###skip_rocm_libs'
 for pkg in /$WHEELHOUSE_DIR/torch*linux*.whl /$LIBTORCH_HOUSE_DIR/libtorch*.zip; do
 
     # if the glob didn't match anything
@@ -415,6 +416,7 @@ for pkg in /$WHEELHOUSE_DIR/torch*linux*.whl /$LIBTORCH_HOUSE_DIR/libtorch*.zip;
     cd ..
     rm -rf tmp
 done
+###skip_rocm_libs
 
 # Copy wheels to host machine for persistence before testing
 if [[ -n "$PYTORCH_FINAL_PACKAGE_DIR" ]]; then
