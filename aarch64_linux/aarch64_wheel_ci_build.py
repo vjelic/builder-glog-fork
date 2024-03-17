@@ -2,7 +2,8 @@
 # encoding: UTF-8
 
 import os
-from subprocess import check_output
+import shutil
+from subprocess import check_output, check_call
 from pygit2 import Repository
 from typing import List
 
@@ -14,22 +15,22 @@ def list_dir(path: str) -> List[str]:
     return check_output(["ls", "-1", path]).decode().split("\n")
 
 
-def build_ArmComputeLibrary(git_clone_flags: str = "") -> None:
+def build_ArmComputeLibrary() -> None:
     '''
     Using ArmComputeLibrary for aarch64 PyTorch
     '''
     print('Building Arm Compute Library')
-    acl_build_flags=" ".join(["debug=0", "neon=1", "opencl=0", "os=linux", "openmp=1", "cppthreads=0",
-                              "arch=armv8a", "multi_isa=1", "fixed_format_kernels=1", "build=native"])
-    os.system("cd / && mkdir /acl")
-    os.system(f"git clone https://github.com/ARM-software/ComputeLibrary.git -b v23.08 {git_clone_flags}")
-    os.system("cd ComputeLibrary; export acl_install_dir=/acl; "
-              f"scons Werror=1 -j8 {acl_build_flags} build_dir=$acl_install_dir/build; "
-              "cp -r arm_compute $acl_install_dir; "
-              "cp -r include $acl_install_dir; "
-              "cp -r utils $acl_install_dir; "
-              "cp -r support $acl_install_dir; "
-              "cp -r src $acl_install_dir; cd /")
+    acl_build_flags=["debug=0", "neon=1", "opencl=0", "os=linux", "openmp=1", "cppthreads=0",
+                     "arch=armv8a", "multi_isa=1", "fixed_format_kernels=1", "build=native"]
+    acl_install_dir="/acl"
+    acl_checkout_dir="ComputeLibrary"
+    os.makedirs(acl_install_dir)
+    check_call(["git", "clone", "https://github.com/ARM-software/ComputeLibrary.git", "-b", "v23.08",
+                "--depth", "1", "--shallow-submodules"])
+    check_call(["scons", "Werror=1", "-j8", f"build_dir=/{acl_install_dir}/build"] + acl_build_flags,
+               cwd=acl_checkout_dir)
+    for d in ["arm_compute", "include", "utils", "support", "src"]:
+        shutil.copytree(f"{acl_checkout_dir}/{d}", f"{acl_install_dir}/{d}")
 
 
 def complete_wheel(folder: str) -> str:
@@ -40,16 +41,16 @@ def complete_wheel(folder: str) -> str:
 
     if "pytorch" in folder:
         print("Repairing Wheel with AuditWheel")
-        os.system(f"cd /{folder}; auditwheel repair dist/{wheel_name}")
+        check_call(["auditwheel","repair", f"dist/{wheel_name}"], cwd=folder)
         repaired_wheel_name = list_dir(f"/{folder}/wheelhouse")[0]
 
         print(f"Moving {repaired_wheel_name} wheel to /{folder}/dist")
-        os.system(f"mv /{folder}/wheelhouse/{repaired_wheel_name} /{folder}/dist/")
+        os.rename(f"/{folder}/wheelhouse/{repaired_wheel_name}", f"/{folder}/dist/{repaired_wheel_name}")
     else:
         repaired_wheel_name = wheel_name
 
     print(f"Copying {repaired_wheel_name} to artfacts")
-    os.system(f"mv /{folder}/dist/{repaired_wheel_name} /artifacts/")
+    shutil.copy2(f"/{folder}/dist/{repaired_wheel_name}", f"/artifacts/{repaired_wheel_name}")
 
     return repaired_wheel_name
 
@@ -78,7 +79,6 @@ if __name__ == '__main__':
     if branch == 'HEAD':
         branch = 'master'
 
-    git_clone_flags = " --depth 1 --shallow-submodules"
 
     print('Building PyTorch wheel')
     build_vars = "CMAKE_SHARED_LINKER_FLAGS=-Wl,-z,max-page-size=0x10000 "
@@ -96,7 +96,7 @@ if __name__ == '__main__':
         build_vars += f"BUILD_TEST=0 PYTORCH_BUILD_VERSION={branch[1:branch.find('-')]} PYTORCH_BUILD_NUMBER=1 "
 
     if enable_mkldnn:
-        build_ArmComputeLibrary(git_clone_flags)
+        build_ArmComputeLibrary()
         print("build pytorch with mkldnn+acl backend")
         build_vars += "USE_MKLDNN=ON USE_MKLDNN_ACL=ON " \
                       "ACL_ROOT_DIR=/acl " \
@@ -108,7 +108,11 @@ if __name__ == '__main__':
 
     # patch mkldnn to fix aarch64 mac and aws lambda crash
     print("Applying mkl-dnn patch to fix crash due to /sys not accesible")
-    os.system("cd /pytorch/third_party/ideep/mkl-dnn && patch -p1 < /builder/mkldnn_fix/fix-xbyak-failure.patch")
+    with open("/builder/mkldnn_fix/fix-xbyak-failure.patch") as f:
+        check_call(["patch", "-p1"], stdin=f, cwd="/pytorch/third_party/ideep/mkl-dnn")
+
+    print("Applying mkl-dnn patch to improve torch.compile() perf")
+    os.system("cd /pytorch/third_party/ideep/mkl-dnn && patch -p1 < /builder/mkldnn_fix/onednn-pr1768-aarch64-add-acl-sbgemm-inner-product-primitive.patch")  # noqa: E501
 
     os.system(f"cd /pytorch; {build_vars} python3 setup.py bdist_wheel")
     pytorch_wheel_name = complete_wheel("pytorch")

@@ -217,7 +217,8 @@ if [[ "$(uname)" == 'Darwin' ]]; then
         "$miniconda_sh" -b -p "$tmp_conda" && \
         rm "$miniconda_sh"
     export PATH="$tmp_conda/bin:$PATH"
-    retry conda install -yq conda-build
+    # TODO(huydhn): We can revert the pin after https://github.com/conda/conda-build/issues/5167 is resolved
+    retry conda install -yq conda-build=3.28.4
 elif [[ "$OSTYPE" == "msys" ]]; then
     export tmp_conda="${WIN_PACKAGE_WORK_DIR}\\conda"
     export miniconda_exe="${WIN_PACKAGE_WORK_DIR}\\miniconda.exe"
@@ -290,11 +291,16 @@ elif [[ "$gpu_arch_type" == 'cuda' ]]; then
         echo "unhandled gpu_arch_version: $gpu_arch_version"
         exit 1
     fi
+
     if [[ "$OSTYPE" != "msys" ]]; then
         # TODO: Remove me when Triton has a proper release channel
         TRITON_VERSION=$(cat $pytorch_rootdir/.ci/docker/triton_version.txt)
-        TRITON_SHORTHASH=$(cut -c1-10 $pytorch_rootdir/.github/ci_commit_pins/triton.txt)
-        export CONDA_TRITON_CONSTRAINT="    - torchtriton==${TRITON_VERSION}+${TRITON_SHORTHASH} # [py < 312]"
+        if [[ -n "$OVERRIDE_PACKAGE_VERSION" && "$OVERRIDE_PACKAGE_VERSION" =~ .*dev.* ]]; then
+            TRITON_SHORTHASH=$(cut -c1-10 $pytorch_rootdir/.github/ci_commit_pins/triton.txt)
+            export CONDA_TRITON_CONSTRAINT="    - torchtriton==${TRITON_VERSION}+${TRITON_SHORTHASH} # [py < 312]"
+        else
+            export CONDA_TRITON_CONSTRAINT="    - torchtriton==${TRITON_VERSION} # [py < 312]"
+        fi
     fi
 
     build_string_suffix="cuda${CUDA_VERSION}_cudnn${CUDNN_VERSION}_${build_string_suffix}"
@@ -391,8 +397,6 @@ for py_ver in "${DESIRED_PYTHON[@]}"; do
       conda install -y conda-package-handling conda==22.9.0
     else
       conda install -y conda-package-handling conda==23.5.2
-      # NS: To be removed after conda docker images are updated
-      conda update -y conda-build
     fi
 
     echo "Calling conda-build at $(date)"

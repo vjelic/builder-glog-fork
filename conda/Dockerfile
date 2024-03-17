@@ -9,6 +9,7 @@ ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US.UTF-8
 
 ARG DEVTOOLSET_VERSION=9
+RUN yum update -y
 RUN yum install -y wget curl perl util-linux xz bzip2 git patch which unzip
 # Just add everything as a safe.directory for git since these will be used in multiple places with git
 RUN git config --global --add safe.directory '*'
@@ -62,7 +63,11 @@ ENV DESIRED_CUDA=11.8
 
 FROM cuda as cuda12.1
 RUN bash ./install_cuda.sh 12.1
-ENV DESIRE_CUDA=12.1
+ENV DESIRED_CUDA=12.1
+
+FROM cuda as cuda12.4
+RUN bash ./install_cuda.sh 12.4
+ENV DESIRED_CUDA=12.4
 
 # Install MNIST test data
 FROM base as mnist
@@ -72,6 +77,7 @@ RUN bash ./install_mnist.sh
 FROM cpu_base as all_cuda_base
 COPY --from=cuda11.8  /usr/local/cuda-11.8 /usr/local/cuda-11.8
 COPY --from=cuda12.1  /usr/local/cuda-12.1 /usr/local/cuda-12.1
+COPY --from=cuda12.4  /usr/local/cuda-12.4 /usr/local/cuda-12.4
 
 FROM base as rocm_base
 ARG ROCM_VERSION=5.2
