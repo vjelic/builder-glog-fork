@@ -282,9 +282,9 @@ if [ ${PYTORCH_VERSION%%\.*} -ge 2 ]; then
         TRITON_VERSION=$(cat $PYTORCH_ROOT/.ci/docker/triton_version.txt)
 
         if [[ -z "$PYTORCH_EXTRA_INSTALL_REQUIREMENTS" ]]; then
-            export PYTORCH_EXTRA_INSTALL_REQUIREMENTS="pytorch-triton-rocm==${TRITON_VERSION}+${TRITON_SHORTHASH}"
+            export PYTORCH_EXTRA_INSTALL_REQUIREMENTS="pytorch-triton-rocm==${TRITON_VERSION}+${ROCM_VERSION}.${TRITON_SHORTHASH}"
         else
-            export PYTORCH_EXTRA_INSTALL_REQUIREMENTS="${PYTORCH_EXTRA_INSTALL_REQUIREMENTS} | pytorch-triton-rocm==${TRITON_VERSION}+${TRITON_SHORTHASH}"
+            export PYTORCH_EXTRA_INSTALL_REQUIREMENTS="${PYTORCH_EXTRA_INSTALL_REQUIREMENTS} | pytorch-triton-rocm==${TRITON_VERSION}+${ROCM_VERSION}.${TRITON_SHORTHASH}"
         fi
     fi
 fi
