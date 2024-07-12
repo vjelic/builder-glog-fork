@@ -93,6 +93,25 @@ case ${GPU_ARCH_TYPE} in
         fi
         DOCKER_GPU_BUILD_ARG="--build-arg ROCM_VERSION=${GPU_ARCH_VERSION} --build-arg PYTORCH_ROCM_ARCH=${PYTORCH_ROCM_ARCH} --build-arg DEVTOOLSET_VERSION=9"
         ;;
+    rocm-manylinux_2_28)
+        TARGET=rocm_final
+        DOCKER_TAG=rocm${GPU_ARCH_VERSION}
+        GPU_IMAGE=amd64/almalinux:8
+        #PYTORCH_ROCM_ARCH="gfx900;gfx906;gfx908;gfx90a;gfx1030;gfx1100"
+        PYTORCH_ROCM_ARCH="gfx908;gfx90a"
+        ROCM_REGEX="([0-9]+)\.([0-9]+)[\.]?([0-9]*)"
+        if [[ $GPU_ARCH_VERSION =~ $ROCM_REGEX ]]; then
+            ROCM_VERSION_INT=$((${BASH_REMATCH[1]}*10000 + ${BASH_REMATCH[2]}*100 + ${BASH_REMATCH[3]:-0}))
+        else
+            echo "ERROR: rocm regex failed"
+            exit 1
+        fi
+        #if [[ $ROCM_VERSION_INT -ge 60000 ]]; then
+        #    PYTORCH_ROCM_ARCH+=";gfx942"
+        #fi
+        DOCKER_GPU_BUILD_ARG="--build-arg ROCM_VERSION=${GPU_ARCH_VERSION} --build-arg PYTORCH_ROCM_ARCH=${PYTORCH_ROCM_ARCH} --build-arg DEVTOOLSET_VERSION=9"
+        MANY_LINUX_VERSION="2_28"
+	;;
     xpu)
         TARGET=xpu_final
         DOCKER_TAG=xpu
