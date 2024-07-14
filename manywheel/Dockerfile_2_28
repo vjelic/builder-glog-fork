@@ -90,6 +90,8 @@ RUN yum install -y \
         gcc-toolset-${DEVTOOLSET_VERSION}-toolchain \
         glibc-langpack-en
 
+RUN ln -sf /usr/bin/python3 /usr/bin/python
+
 RUN yum install -y \
     https://repo.ius.io/ius-release-el7.rpm \
     https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
