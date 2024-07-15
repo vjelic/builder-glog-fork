@@ -137,6 +137,10 @@ COPY --from=magma    /usr/local/cuda-${BASE_CUDA_VERSION}  /usr/local/cuda-${BAS
 
 FROM common as rocm_final
 ARG ROCM_VERSION=6.0
+
+# TODO :Currently adding ROCM_PATH, due to a build error, remove later
+ENV ROCM_PATH /opt/rocm
+
 ARG PYTORCH_ROCM_ARCH
 ENV PYTORCH_ROCM_ARCH ${PYTORCH_ROCM_ARCH}
 ADD ./common/install_rocm_drm.sh install_rocm_drm.sh
