@@ -6,6 +6,16 @@
 
 set -ex
 
+ID=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
+case "$ID" in
+  almalinux)
+    yum install -y gcc-gfortran
+    ;;
+  *)
+    echo "No preinstalls to build magma..."
+    ;;
+esac
+
 # TODO (2)
 MKLROOT=${MKLROOT:-/opt/intel}
 
