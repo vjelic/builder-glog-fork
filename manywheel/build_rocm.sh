@@ -209,6 +209,11 @@ ARCH_SPECIFIC_FILES=$(ls $HIPBLASLT_LIB_SRC | grep -E $ARCH)
 OTHER_FILES=$(ls $HIPBLASLT_LIB_SRC | grep -v gfx)
 HIPBLASLT_LIB_FILES=($ARCH_SPECIFIC_FILES $OTHER_FILES)
 
+# Overwrite ROCM_SO_FILES to contain only magma lib
+ROCM_SO_FILES=(
+    "libmagma.so"
+)
+
 # ROCm library files
 ROCM_SO_PATHS=()
 for lib in "${ROCM_SO_FILES[@]}"
@@ -231,24 +236,16 @@ done
 
 DEPS_LIST=(
     ${ROCM_SO_PATHS[*]}
-    ${OS_SO_PATHS[*]}
 )
 
 DEPS_SONAME=(
     ${ROCM_SO_FILES[*]}
-    ${OS_SO_FILES[*]}
 )
 
 DEPS_AUX_SRCLIST=(
-    "${ROCBLAS_LIB_FILES[@]/#/$ROCBLAS_LIB_SRC/}"
-    "${HIPBLASLT_LIB_FILES[@]/#/$HIPBLASLT_LIB_SRC/}"
-    "/opt/amdgpu/share/libdrm/amdgpu.ids"
 )
 
 DEPS_AUX_DSTLIST=(
-    "${ROCBLAS_LIB_FILES[@]/#/$ROCBLAS_LIB_DST/}"
-    "${HIPBLASLT_LIB_FILES[@]/#/$HIPBLASLT_LIB_DST/}"
-    "share/libdrm/amdgpu.ids"
 )
 
 if [[ $ROCM_INT -ge 50500 ]]; then
