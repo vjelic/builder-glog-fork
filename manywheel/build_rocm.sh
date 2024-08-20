@@ -136,7 +136,7 @@ if [[ "$OS_NAME" == *"CentOS Linux"* || "$OS_NAME" == *"AlmaLinux"* ]]; then
         # Below libs are direct dependencies of libhipsolver
         LIBSUITESPARSE_CONFIG_PATH="/lib64/libsuitesparseconfig.so.4"
         if [[ "$OS_NAME" == *"CentOS Linux"* ]]; then
-            LIBCHOLMOD_PATH="/lib64/libcholmod.so.2
+            LIBCHOLMOD_PATH="/lib64/libcholmod.so.2"
             # Below libs are direct dependencies of libsatlas
             LIBGFORTRAN_PATH="/lib64/libgfortran.so.3"
         else
