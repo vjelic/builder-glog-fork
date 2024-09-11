@@ -189,7 +189,7 @@ if [[ "$(uname -m)" == "arm64" ]]; then
 else
   retry conda install ${EXTRA_CONDA_INSTALL_FLAGS} -yq cmake ninja mkl-include==2022.2.1 mkl-static==2022.2.1 -c intel
 fi
-retry pip install -qr "${pytorch_rootdir}/requirements.txt" || true
+retry pip install -r "${pytorch_rootdir}/requirements.txt" || true
 
 # For USE_DISTRIBUTED=1 on macOS, need libuv and pkg-config to find libuv.
 export USE_DISTRIBUTED=1
