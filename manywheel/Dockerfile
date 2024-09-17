@@ -114,7 +114,8 @@ RUN yum install -y \
         wget \
         which \
         xz \
-        yasm
+        yasm \
+        zstd
 RUN yum install -y \
     https://repo.ius.io/ius-release-el7.rpm
 #Stopped working as of 8/1 (due to CentOS EOL?)
