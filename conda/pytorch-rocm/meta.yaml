@@ -13,7 +13,6 @@ build:
 requirements:
   run:
     - rocm {{ rocm_constraints }}
-    - miopen-hip-dev {{ rocm_constraints }}
     - libtinfo5
   # None, pytorch should depend on pytorch-rocm
 test:
