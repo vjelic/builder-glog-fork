@@ -79,6 +79,7 @@ requirements:
 {{ environ.get('CONDA_CUDATOOLKIT_CONSTRAINT', '') }}
 {{ environ.get('CONDA_ROCM_CONSTRAINT', '') }}
 {{ environ.get('CONDA_TRITON_CONSTRAINT', '') }}
+{{ environ.get('CONDA_AOTRITON_CONSTRAINT', '') }}
     {% if build_variant == 'rocm' %}
 {{ environ.get('MAGMA_PACKAGE', '') }}
     {% endif %}
