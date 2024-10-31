@@ -398,7 +398,7 @@ for py_ver in "${DESIRED_PYTHON[@]}"; do
       # Fow windows need to keep older conda version
       conda install -y conda-package-handling conda==22.9.0
     else
-      conda install -y conda-package-handling conda==23.5.2
+      conda install -y conda-package-handling
     fi
 
     echo "Calling conda-build at $(date)"
@@ -407,7 +407,7 @@ for py_ver in "${DESIRED_PYTHON[@]}"; do
          PYTORCH_GITHUB_ROOT_DIR="$pytorch_rootdir" \
          PYTORCH_BUILD_STRING="$build_string" \
          PYTORCH_MAGMA_CUDA_VERSION="$cuda_nodot" \
-         conda build -c "$ANACONDA_USER" \
+         conda build \
                      ${NO_TEST:-} \
                      --no-anaconda-upload \
                      --python "$py_ver" \

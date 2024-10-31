@@ -2,7 +2,7 @@
 set -ex
 
 export CMAKE_LIBRARY_PATH=$PREFIX/lib:$PREFIX/include:$CMAKE_LIBRARY_PATH
-export CMAKE_PREFIX_PATH=$PREFIX
+export CMAKE_PREFIX_PATH="${BUILD_PREFIX}/${HOST}/sysroot/usr/;${PREFIX}"
 export TH_BINARY_BUILD=1 # links CPU BLAS libraries thrice in a row (was needed for some MKL static linkage)
 export PYTORCH_BUILD_VERSION=$PKG_VERSION
 export PYTORCH_BUILD_NUMBER=$PKG_BUILDNUM
@@ -80,12 +80,18 @@ if [[ -n "$build_with_cuda" ]]; then
     # export USE_CUDA_STATIC_LINK=1 # links libcaffe2_gpu.so with static CUDA libs. Likely both these flags can be de-duplicated
 fi
 if [[ -n "$build_with_rocm" ]]; then
+    export CXXFLAGS="$(echo ${CXXFLAGS} | sed -e 's/ -std=[^ ]*//')"
+    export CXXFLAGS="${CXXFLAGS} -D__STDC_FORMAT_MACROS"
+
+    export LDFLAGS="$(echo ${LDFLAGS} | sed -e 's/-Wl\,--as-needed//')"
+    export LDFLAGS="${LDFLAGS} -Wl,-rpath-link,${PREFIX}/lib"
     export USE_LLVM="$PREFIX/llvm"
     export LLVM_DIR="$USE_LLVM/lib/cmake/llvm"
     export ROCM_PATH=$PREFIX
     export ROCM_SOURCE_DIR=$PREFIX
     export USE_ROCM=1
     export USE_MAGMA=1
+    export AOTRITON_INSTALLED_PREFIX=$PREFIX
     hipconfig -f
     python tools/amd_build/build_amd.py
 fi
