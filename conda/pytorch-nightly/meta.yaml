@@ -33,6 +33,7 @@ requirements:
     - mkl-include # [x86_64]
     - mkl >=2021,<2022 # [x86_64]
     - openssl=3.3.2 # [linux]
+    - suitesparse >=5,<7 # [linux]
       {% else %}
     - mkl-include # [x86_64]
     - mkl=2020.2 # [py <= 311 and x86_64 and not win]
@@ -62,6 +63,7 @@ requirements:
       {% if build_variant == 'rocm' %}
     - mkl-include # [x86_64]
     - mkl >=2021,<2022 # [x86_64]
+    - suitesparse >=5,<7 # [linux]
       {% else %}
     - mkl >=2018 # [x86_64 and not win]
     - mkl=2021.4 # [x86_64 and win and py <= 311]
