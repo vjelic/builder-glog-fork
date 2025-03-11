@@ -176,7 +176,7 @@ fi
 
 # This value comes from binary_linux_build.sh (and should only be set to true
 # for master / release branches)
-BUILD_DEBUG_INFO=${BUILD_DEBUG_INFO:=0}
+BUILD_DEBUG_INFO=${BUILD_DEBUG_INFO:=1}
 
 if [[ $BUILD_DEBUG_INFO == "1" ]]; then
     echo "Building wheel and debug info"
@@ -505,11 +505,11 @@ if [[ -z "$BUILD_PYTHONLESS" ]]; then
   fi
 
   pip uninstall -y "$TORCH_PACKAGE_NAME"
-  
+
   if [[ "$USE_SPLIT_BUILD" == "true" ]]; then
     pip install "$TORCH_NO_PYTHON_PACKAGE_NAME" --no-index -f /$WHEELHOUSE_DIR --no-dependencies -v
   fi
-  
+
   pip install "$TORCH_PACKAGE_NAME" --no-index -f /$WHEELHOUSE_DIR --no-dependencies -v
 
   # Print info on the libraries installed in this wheel
