@@ -27,6 +27,8 @@ if [[ "$OS_NAME" == *"CentOS Linux"* ]]; then
     retry yum install -q -y zip openssl
 elif [[ "$OS_NAME" == *"AlmaLinux"* ]]; then
     retry yum install -q -y zip openssl
+    retry yum install -y openmpi openmpi-devel
+    export USE_MPI=1
 elif [[ "$OS_NAME" == *"Red Hat Enterprise Linux"* ]]; then
     retry dnf install -q -y zip openssl
 elif [[ "$OS_NAME" == *"Ubuntu"* ]]; then
@@ -38,8 +40,6 @@ elif [[ "$OS_NAME" == *"Ubuntu"* ]]; then
     retry apt-get update
     retry apt-get -y install zip openssl
     apt-get install libopenmpi-dev openmpi-bin
-    which mpicc
-    which mpirun
     export USE_MPI=1
 fi
 
