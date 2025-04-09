@@ -37,6 +37,10 @@ elif [[ "$OS_NAME" == *"Ubuntu"* ]]; then
 
     retry apt-get update
     retry apt-get -y install zip openssl
+    apt-get install libopenmpi-dev openmpi-bin
+    which mpicc
+    which mpirun
+    export USE_MPI=1
 fi
 
 # We use the package name to test the package by passing this to 'pip install'
