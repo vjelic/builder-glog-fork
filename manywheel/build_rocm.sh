@@ -17,7 +17,7 @@ export INSTALL_TEST=0 # dont install test binaries into site-packages
 # Set RPATH instead of RUNPATH when using patchelf to avoid LD_LIBRARY_PATH override
 export FORCE_RPATH="--force-rpath"
 #install MPI
-dnf install -y openmpi openmpi-dev
+dnf install -y openmpi openmpi-devel
 export PATH="/usr/lib64/openmpi/bin:${PATH}"
 export USE_MPI=1
 
