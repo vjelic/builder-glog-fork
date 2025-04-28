@@ -203,7 +203,7 @@ for pkg in /$WHEELHOUSE_DIR/torch_no_python*.whl /$WHEELHOUSE_DIR/${WHEELNAME_MA
         popd
     fi
     # Rename wheel for Manylinux 2_28
-    if [[ $PLATFORM == "manylinux_2_28_x86_64"]]; then
+    if [[ $PLATFORM == "manylinux_2_28_x86_64" ]]; then
         pkg_name=$(echo $(basename $pkg) | sed -e s#linux_x86_64#"${PLATFORM}"#)
         zip -rq $pkg_name $PREIX*
         rm -f $pkg
