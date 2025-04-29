@@ -154,7 +154,7 @@ for pkg in /$WHEELHOUSE_DIR/torch_no_python*.whl /$WHEELHOUSE_DIR/${WHEELNAME_MA
     done
     # create Manylinux 2_28 tag this needs to happen before regenerate the RECORD
     if [[ $PLATFORM == "manylinux_2_28_x86_64" ]]; then
-        wheel_file=$(echo $(basename $pkg) | sed -e 's/-cp.*$/.dist-info\/WHEEL/g')
+        wheel_file=$(basename "$pkg" | sed -e 's/-cp.*$/.dist-info\/WHEEL/g')
         sed -i -e s#linux_x86_64#"${PLATFORM}"# $wheel_file;
     fi
 
@@ -204,16 +204,9 @@ for pkg in /$WHEELHOUSE_DIR/torch_no_python*.whl /$WHEELHOUSE_DIR/${WHEELNAME_MA
     fi
     # Rename wheel for Manylinux 2_28
     if [[ $PLATFORM == "manylinux_2_28_x86_64" ]]; then
-        pkg_name=$(echo $(basename $pkg) | sed -e s#linux_x86_64#"${PLATFORM}"#)
-        zip -rq $pkg_name $PREIX*
-        rm -f $pkg
-        mv $pkg_name $(dirname $pkg)/$pkg_name
+        zip -rq "$(basename "$pkg" | sed -e "s#manylinux2014_x86_64#${PLATFORM}#")" "${PREFIX}"*
     else
-        # zip up the wheel back
-        zip -rq $(basename $pkg) $PREIX*
-        # remove original wheel
-        rm -f $pkg
-        mv $(basename $pkg) $pkg
+        zip -rq "$(basename "$pkg")" "${PREFIX}"*
     fi
 
     # zip up the wheel back
