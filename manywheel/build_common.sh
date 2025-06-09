@@ -203,21 +203,19 @@ for pkg in /$WHEELHOUSE_DIR/torch_no_python*.whl /$WHEELHOUSE_DIR/${WHEELNAME_MA
         popd
     fi
     # Rename wheel for Manylinux 2_28
-    if [[ $PLATFORM == "manylinux_2_28_x86_64" ]]; then
-        wheel_file=$(basename "$pkg" | sed -e 's/-cp.*$/.dist-info\/WHEEL/')
-        sed -i -e "s#linux_x86_64#${PLATFORM}#" "$wheel_file"
-
-        zip -rq "$(basename "$pkg" | sed -e "s#linux_x86_64#${PLATFORM}#")" "${PREFIX}"*
-    else
-        zip -rq "$(basename "$pkg")" "${PREFIX}"*
+    if [[ "$PLATFORM" == "manylinux_2_28_x86_64" ]]; then
+        new_pkg=$(echo "$pkg" | sed "s#linux_x86_64#${PLATFORM}#")
+        if [[ "$pkg" != "$new_pkg" ]]; then
+            pkg="$new_pkg"  
+        fi
     fi
 
-    # zip up the wheel back
-    zip -rq $(basename $pkg) $PREIX*
+    # Re-zip the edited tree into the wheel
+    zip -rq "$(basename "$pkg")" "${PREFIX}"*
 
-    # replace original wheel
-    rm -f $pkg
-    mv $(basename $pkg) $pkg
+    # Replace the original wheel with the one we just built
+    rm -f "$pkg"
+    mv "$(basename "$pkg")" "$pkg"
     # Rename wheel to reflect lightweight/heavyweight
     if [[ -n "${WHEELNAME_MARKER}" ]]; then
         # Rename wheel to match metadata in dist-info
