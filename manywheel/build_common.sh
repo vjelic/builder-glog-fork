@@ -13,7 +13,7 @@ SOURCE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 # so manually do the work of copying dependency libs and patchelfing
 # and fixing RECORDS entries correctly
 ######################################################################
-PLATFORM="manylinux2014_x86_64"
+PLATFORM="manylinux_2_28_x86_64"
 fname_with_sha256() {
     HASH=$(sha256sum $1 | cut -c1-8)
     DIRNAME=$(dirname $1)
