@@ -153,9 +153,14 @@ for pkg in /$WHEELHOUSE_DIR/torch_no_python*.whl /$WHEELHOUSE_DIR/${WHEELNAME_MA
         $PATCHELF_BIN --print-rpath $sofile
     done
     # create Manylinux 2_28 tag this needs to happen before regenerate the RECORD
-    if [[ $PLATFORM == "manylinux_2_28_x86_64" ]]; then
-        wheel_file=$(basename "$pkg" | sed -e 's/-cp.*$/.dist-info\/WHEEL/g')
-        sed -i -e s#linux_x86_64#"${PLATFORM}"# $wheel_file;
+    if [[ "$PLATFORM" == "manylinux_2_28_x86_64" ]]; then
+        # Pick the right WHEEL file, even when the dist-info dir was renamed
+        if [[ -n "${WHEELNAME_MARKER}" ]]; then
+            wheel_file="${new_dist_info_dir}/WHEEL"
+        else
+            wheel_file=$(basename "$pkg" | sed -e 's/-cp.*$/.dist-info\/WHEEL/')
+        fi
+        sed -i -e "s#linux_x86_64#${PLATFORM}#" "$wheel_file"
     fi
 
     # regenerate the RECORD file with new hashes
