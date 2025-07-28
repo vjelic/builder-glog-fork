@@ -165,6 +165,9 @@ do_heavyweight_build() {
     if [[ $(ver $PYTORCH_VERSION) -ge $(ver 2.8) ]]; then
         HEAVYWEIGHT_ROCM_SO_FILES+=("libhipsparselt.so")
 	HEAVYWEIGHT_ROCM_SO_FILES+=("librocprofiler-sdk.so")
+ 	HEAVYWEIGHT_ROCM_SO_FILES+=("libatomic.so")
+  	HEAVYWEIGHT_ROCM_SO_FILES+=("libhsa-amd-aqlprofile64.so")
+   	HEAVYWEIGHT_ROCM_SO_FILES+=("libdw.so")
     fi
     
     
